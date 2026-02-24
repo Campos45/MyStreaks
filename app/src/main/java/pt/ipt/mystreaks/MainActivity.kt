@@ -20,4 +20,3 @@ class MainActivity : AppCompatActivity() {
 }
 
 
-//ifjioerejigghilhui
