@@ -25,6 +25,17 @@
 
         <activity android:name=".TasksActivity" android:exported="false" />
         <activity android:name=".LogsActivity" android:exported="false" />
+
+        <receiver android:name=".StreakWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_info" />
+        </receiver>
+
+        <service android:name=".StreakWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
     </application>
 
 </manifest>

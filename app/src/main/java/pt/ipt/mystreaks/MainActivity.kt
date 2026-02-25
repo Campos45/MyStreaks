@@ -20,6 +20,7 @@ import com.google.android.material.snackbar.Snackbar
 import pt.ipt.mystreaks.databinding.ActivityMainBinding
 import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
 
+import pt.ipt.mystreaks.R
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -201,6 +202,12 @@ class MainActivity : AppCompatActivity() {
             binding.tvAppTitle.text = "MyStreaks 🔥"
             binding.tvToggleArchive.text = "📁 Arquivo"
         }
+
+        // --- NOVO: MANDAR ATUALIZAR O WIDGET ---
+        val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
+        val widgetComponent = android.content.ComponentName(this, StreakWidgetProvider::class.java)
+        val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+        appWidgetManager.notifyAppWidgetViewDataChanged(widgetIds, R.id.widgetListView)
     }
 
     private fun showAddStreakDialog() {
