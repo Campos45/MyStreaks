@@ -19,7 +19,13 @@ interface StreakDao {
     @Delete
     suspend fun delete(streak: Streak)
 
-    // Vai buscar todas as streaks e atualiza a lista automaticamente sempre que houver mudanças (usando Flow)
     @Query("SELECT * FROM streaks_table ORDER BY id ASC")
     fun getAllStreaks(): Flow<List<Streak>>
+
+    // --- NOVO: Funções para o motor de tempo (Worker) ---
+    @Query("SELECT * FROM streaks_table")
+    suspend fun getStreaksList(): List<Streak>
+
+    @Update
+    suspend fun updateAll(streaks: List<Streak>)
 }
