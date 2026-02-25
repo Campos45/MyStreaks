@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#FF6D00</color> <color name="primary_variant">#E65100</color> <color name="background">#F5F7FA</color> <color name="surface">#FFFFFF</color> <color name="text_primary">#2D3748</color> <color name="text_secondary">#718096</color> <color name="badge_daily">#EBF8FF</color>
+    <color name="badge_daily_text">#2B6CB0</color>
+    <color name="badge_weekly">#FAF5FF</color>
+    <color name="badge_weekly_text">#6B46C1</color>
+    <color name="badge_monthly">#F0FFF4</color>
+    <color name="badge_monthly_text">#2F855A</color>
+    <color name="black">#000000</color>
 </resources>

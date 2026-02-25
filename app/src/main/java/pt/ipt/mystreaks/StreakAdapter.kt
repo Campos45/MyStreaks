@@ -26,16 +26,33 @@ class StreakAdapter(
     inner class StreakViewHolder(private val binding: ItemStreakBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(streak: Streak) {
             binding.tvActivityName.text = streak.name
-            binding.tvType.text = streak.type
-            binding.tvStreakCount.text = "🔥 ${streak.count}"
 
-            // Removemos o listener temporariamente para evitar falsos positivos quando a lista faz scroll
+            // Coloca apenas o número (o emoji de fogo já está no XML)
+            binding.tvStreakCount.text = streak.count.toString()
+
+            // Define o texto e as cores da etiqueta consoante a frequência
+            val context = binding.root.context
+            when (streak.type) {
+                "D" -> {
+                    binding.tvType.text = "Diária"
+                    binding.tvType.setTextColor(context.getColor(R.color.badge_daily_text))
+                    binding.tvType.setBackgroundColor(context.getColor(R.color.badge_daily))
+                }
+                "S" -> {
+                    binding.tvType.text = "Semanal"
+                    binding.tvType.setTextColor(context.getColor(R.color.badge_weekly_text))
+                    binding.tvType.setBackgroundColor(context.getColor(R.color.badge_weekly))
+                }
+                "M" -> {
+                    binding.tvType.text = "Mensal"
+                    binding.tvType.setTextColor(context.getColor(R.color.badge_monthly_text))
+                    binding.tvType.setBackgroundColor(context.getColor(R.color.badge_monthly))
+                }
+            }
+
             binding.cbCompleted.setOnCheckedChangeListener(null)
-
-            // Define se a checkbox deve aparecer marcada ou desmarcada com base na base de dados
             binding.cbCompleted.isChecked = streak.isCompleted
 
-            // Fica à escuta de quando o utilizador clica na checkbox
             binding.cbCompleted.setOnCheckedChangeListener { _, isChecked ->
                 onStreakCheckChanged(streak, isChecked)
             }
