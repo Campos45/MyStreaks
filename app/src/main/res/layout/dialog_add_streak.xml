@@ -33,35 +33,38 @@
         android:layout_height="wrap_content"
         android:text="Frequência:"
         android:textSize="16sp"
+        android:textStyle="bold"
         android:layout_marginBottom="8dp"/>
 
     <RadioGroup
         android:id="@+id/rgFrequency"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:weightSum="3"
+        android:layout_marginBottom="16dp">
 
         <RadioButton
             android:id="@+id/rbDaily"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Diária (D)"
-            android:checked="true"
-            android:layout_marginEnd="8dp"/>
+            android:layout_weight="1"
+            android:text="Diária"
+            android:checked="true"/>
 
         <RadioButton
             android:id="@+id/rbWeekly"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Semanal (S)"
-            android:layout_marginEnd="8dp"/>
+            android:layout_weight="1"
+            android:text="Semanal"/>
 
         <RadioButton
             android:id="@+id/rbMonthly"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Mensal (M)"/>
-
+            android:layout_weight="1"
+            android:text="Mensal"/>
     </RadioGroup>
 
 </LinearLayout>

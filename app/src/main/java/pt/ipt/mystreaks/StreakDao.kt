@@ -20,7 +20,7 @@ interface StreakDao {
     suspend fun delete(streak: Streak)
 
     // NOVO: Vai buscar apenas as atividades ativas (isArchived = 0)
-    @Query("SELECT * FROM streaks_table WHERE isArchived = 0 ORDER BY id ASC")
+    @Query("SELECT * FROM streaks_table WHERE isArchived = 0 ORDER BY orderIndex ASC, id ASC")
     fun getActiveStreaks(): Flow<List<Streak>>
 
     // NOVO: Vai buscar apenas o arquivo (isArchived = 1)

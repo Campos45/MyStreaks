@@ -13,10 +13,10 @@ import java.util.Date
 import java.util.Locale
 
 class TaskAdapter(
-    private val onTaskUpdate: (Task) -> Unit
+    private val onTaskUpdate: (Task) -> Unit,
+    private val onEditClicked: (Task) -> Unit // NOVO: Listener para o botão Editar
 ) : ListAdapter<Task, TaskAdapter.TaskViewHolder>(TaskComparator()) {
 
-    // Guarda a memória de quais cartões estão expandidos (abertos)
     private val expandedTasks = mutableSetOf<Int>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
@@ -32,20 +32,24 @@ class TaskAdapter(
         fun bind(task: Task) {
             binding.tvTaskName.text = task.name
 
-            // Previne loops de clique ao fazer scroll
             binding.cbTaskCompleted.setOnCheckedChangeListener(null)
             binding.cbTaskCompleted.isChecked = task.isCompleted
 
-            // Mostrar data se concluída
             if (task.isCompleted && task.completionDate != null) {
                 binding.tvCompletionDate.visibility = View.VISIBLE
                 val sdf = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault())
                 binding.tvCompletionDate.text = "Concluída em: ${sdf.format(Date(task.completionDate!!))}"
+                binding.ivEdit.visibility = View.GONE // Não deixamos editar tarefas já concluídas
             } else {
                 binding.tvCompletionDate.visibility = View.GONE
+                binding.ivEdit.visibility = View.VISIBLE
             }
 
-            // Limpa as visualizações antigas
+            // Ação do Botão Editar
+            binding.ivEdit.setOnClickListener {
+                onEditClicked(task)
+            }
+
             binding.layoutSubTasks.removeAllViews()
 
             if (task.subTasks.isNotEmpty()) {
@@ -53,7 +57,6 @@ class TaskAdapter(
                 val isExpanded = expandedTasks.contains(task.id)
                 binding.layoutSubTasks.visibility = if (isExpanded) View.VISIBLE else View.GONE
 
-                // Roda a seta
                 binding.ivExpand.rotation = if (isExpanded) 180f else 0f
 
                 binding.ivExpand.setOnClickListener {
@@ -61,7 +64,6 @@ class TaskAdapter(
                     notifyItemChanged(adapterPosition)
                 }
 
-                // Cria as caixas para cada sub-passo dinamicamente
                 val inflater = LayoutInflater.from(binding.root.context)
                 task.subTasks.forEachIndexed { index, subTask ->
                     val cbSubTask = inflater.inflate(R.layout.item_subtask, binding.layoutSubTasks, false) as CheckBox
@@ -72,9 +74,7 @@ class TaskAdapter(
                         val updatedSubTasks = task.subTasks.toMutableList()
                         updatedSubTasks[index] = subTask.copy(isCompleted = isChecked)
 
-                        // Se todos os sub-passos forem marcados, a tarefa completa-se sozinha!
                         val allCompleted = updatedSubTasks.all { it.isCompleted }
-
                         val updatedTask = task.copy(
                             subTasks = updatedSubTasks,
                             isCompleted = allCompleted,
@@ -90,7 +90,6 @@ class TaskAdapter(
             }
 
             binding.cbTaskCompleted.setOnCheckedChangeListener { _, isChecked ->
-                // Se o utilizador marcar a tarefa toda, todos os sub-passos ficam concluídos!
                 val updatedSubTasks = task.subTasks.map { it.copy(isCompleted = isChecked) }
                 val updatedTask = task.copy(
                     isCompleted = isChecked,

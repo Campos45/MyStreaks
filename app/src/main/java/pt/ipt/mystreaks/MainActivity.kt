@@ -19,8 +19,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import pt.ipt.mystreaks.databinding.ActivityMainBinding
 import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
-
 import pt.ipt.mystreaks.R
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // NOVO: Adicionado o "onHistoryClicked" ao Adaptador
         adapter = StreakAdapter(
             onStreakCheckChanged = { streak, isChecked ->
                 if (streak.isCompleted == isChecked) return@StreakAdapter
@@ -59,12 +58,11 @@ class MainActivity : AppCompatActivity() {
 
                 val newCount = if (isChecked) streak.count + 1 else if (streak.count > 0) streak.count - 1 else 0
 
-                // Grava o dia inicial da streak se estivermos a começar agora
                 var newStartDate = streak.currentStartDate
                 if (isChecked && streak.count == 0) {
                     newStartDate = System.currentTimeMillis()
                 } else if (!isChecked && newCount == 0) {
-                    newStartDate = null // Retirou e voltou a 0
+                    newStartDate = null
                 }
 
                 val updatedStreak = streak.copy(count = newCount, isCompleted = isChecked, currentStartDate = newStartDate)
@@ -81,8 +79,40 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerViewStreaks.adapter = adapter
         binding.recyclerViewStreaks.layoutManager = LinearLayoutManager(this)
 
-        val swipeToDeleteCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
+        // --- INÍCIO DA ZONA ALTERADA PARA O DRAG & DROP ---
+        val swipeAndDragCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, // Permite arrastar para cima e baixo
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT // Permite deslizar
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                if (isShowingArchive) return false // No arquivo não deixamos reordenar
+
+                val fromPosition = viewHolder.adapterPosition
+                val toPosition = target.adapterPosition
+
+                // Cria uma cópia da lista atual mutável
+                val currentList = adapter.currentList.toMutableList()
+
+                // Troca os itens de posição na memória
+                val itemMoved = currentList.removeAt(fromPosition)
+                currentList.add(toPosition, itemMoved)
+
+                // Atualiza o ecrã instantaneamente
+                adapter.submitList(currentList)
+
+                // Atualiza a posição (orderIndex) na base de dados
+                currentList.forEachIndexed { index, streak ->
+                    if (streak.orderIndex != index) {
+                        viewModel.update(streak.copy(orderIndex = index))
+                    }
+                }
+                return true
+            }
+
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val streak = adapter.currentList[position]
@@ -110,7 +140,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        ItemTouchHelper(swipeToDeleteCallback).attachToRecyclerView(binding.recyclerViewStreaks)
+        ItemTouchHelper(swipeAndDragCallback).attachToRecyclerView(binding.recyclerViewStreaks)
+        // --- FIM DA ZONA ALTERADA ---
 
         viewModel.activeStreaks.observe(this) { streaks ->
             activeList = streaks ?: emptyList()
@@ -138,9 +169,7 @@ class MainActivity : AppCompatActivity() {
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork("StreakCheck", androidx.work.ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
 
-    // NOVO: Mostra a janela do Histórico da Streak
     private fun showStreakHistoryDialog(streak: Streak) {
-        // Ordena para os recordes maiores aparecerem primeiro (Ordem Decrescente)
         val sortedHistory = streak.history.sortedByDescending { it.count }
 
         if (sortedHistory.isEmpty()) {
@@ -150,7 +179,6 @@ class MainActivity : AppCompatActivity() {
 
         val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
 
-        // Cria a lista de texto
         val historyItems = sortedHistory.mapIndexed { index, record ->
             val start = sdf.format(java.util.Date(record.startDate))
             val end = sdf.format(java.util.Date(record.endDate))
@@ -203,11 +231,17 @@ class MainActivity : AppCompatActivity() {
             binding.tvToggleArchive.text = "📁 Arquivo"
         }
 
-        // --- NOVO: MANDAR ATUALIZAR O WIDGET ---
-        val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-        val widgetComponent = android.content.ComponentName(this, StreakWidgetProvider::class.java)
-        val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
-        appWidgetManager.notifyAppWidgetViewDataChanged(widgetIds, R.id.widgetListView)
+        // --- SOLUÇÃO DO ECRÃ PRETO (CORRER EM SEGUNDO PLANO) ---
+        Thread {
+            try {
+                val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this@MainActivity)
+                val widgetComponent = android.content.ComponentName(this@MainActivity, StreakWidgetProvider::class.java)
+                val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+                appWidgetManager.notifyAppWidgetViewDataChanged(widgetIds, R.id.widgetListView)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.start()
     }
 
     private fun showAddStreakDialog() {
@@ -220,9 +254,9 @@ class MainActivity : AppCompatActivity() {
                     val selectedTypeId = dialogBinding.rgFrequency.checkedRadioButtonId
                     val selectedRadioButton = dialogBinding.root.findViewById<RadioButton>(selectedTypeId)
                     val type = when (selectedRadioButton.text.toString()) {
-                        "Diária (D)" -> "D"
-                        "Semanal (S)" -> "S"
-                        "Mensal (M)" -> "M"
+                        "Diária" -> "D"
+                        "Semanal" -> "S"
+                        "Mensal" -> "M"
                         else -> "D"
                     }
                     viewModel.insert(Streak(name = activityName, type = type))

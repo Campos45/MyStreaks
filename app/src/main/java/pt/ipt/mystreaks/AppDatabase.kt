@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 // NOVO: Versão 5!
-@Database(entities = [Streak::class, Task::class, AppLog::class], version = 5, exportSchema = false)
+@Database(entities = [Streak::class, Task::class, AppLog::class], version = 7, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
