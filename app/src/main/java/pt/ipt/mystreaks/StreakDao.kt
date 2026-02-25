@@ -19,12 +19,17 @@ interface StreakDao {
     @Delete
     suspend fun delete(streak: Streak)
 
-    @Query("SELECT * FROM streaks_table ORDER BY id ASC")
-    fun getAllStreaks(): Flow<List<Streak>>
+    // NOVO: Vai buscar apenas as atividades ativas (isArchived = 0)
+    @Query("SELECT * FROM streaks_table WHERE isArchived = 0 ORDER BY id ASC")
+    fun getActiveStreaks(): Flow<List<Streak>>
 
-    // --- NOVO: Funções para o motor de tempo (Worker) ---
-    @Query("SELECT * FROM streaks_table")
-    suspend fun getStreaksList(): List<Streak>
+    // NOVO: Vai buscar apenas o arquivo (isArchived = 1)
+    @Query("SELECT * FROM streaks_table WHERE isArchived = 1 ORDER BY id ASC")
+    fun getArchivedStreaks(): Flow<List<Streak>>
+
+    // Para o motor de tempo (só afeta as ativas)
+    @Query("SELECT * FROM streaks_table WHERE isArchived = 0")
+    suspend fun getActiveStreaksList(): List<Streak>
 
     @Update
     suspend fun updateAll(streaks: List<Streak>)

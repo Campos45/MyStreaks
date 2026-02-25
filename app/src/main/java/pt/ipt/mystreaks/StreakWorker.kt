@@ -14,7 +14,8 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val database = AppDatabase.getDatabase(applicationContext)
         val dao = database.streakDao()
 
-        val streaks = dao.getStreaksList()
+        // NOVO: Vai buscar apenas as ativas
+        val streaks = dao.getActiveStreaksList()
         var needsUpdate = false
         val updatedStreaks = mutableListOf<Streak>()
 
@@ -28,56 +29,49 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             val lastReset = Calendar.getInstance().apply { timeInMillis = streak.lastResetDate }
             var hasResetOccurred = false
 
-            // Verificar se o período virou e calcular os prazos das notificações
             when (streak.type) {
                 "D" -> {
-                    // Passou da meia-noite?
                     if (now.get(Calendar.DAY_OF_YEAR) != lastReset.get(Calendar.DAY_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
                         hasResetOccurred = true
                     } else if (!streak.isCompleted && now.get(Calendar.HOUR_OF_DAY) >= 20) {
-                        sendDailyNotification = true // São 20h ou mais (faltam menos de 4h)
+                        sendDailyNotification = true
                     }
                 }
                 "S" -> {
-                    // Mudou de semana?
                     if (now.get(Calendar.WEEK_OF_YEAR) != lastReset.get(Calendar.WEEK_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
                         hasResetOccurred = true
                     } else if (!streak.isCompleted && now.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-                        sendWeeklyNotification = true // É Domingo (falta 1 dia)
+                        sendWeeklyNotification = true
                     }
                 }
                 "M" -> {
-                    // Mudou de mês?
                     if (now.get(Calendar.MONTH) != lastReset.get(Calendar.MONTH) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
                         hasResetOccurred = true
                     } else {
                         val lastDayOfMonth = now.getActualMaximum(Calendar.DAY_OF_MONTH)
                         if (!streak.isCompleted && (lastDayOfMonth - now.get(Calendar.DAY_OF_MONTH)) <= 5) {
-                            sendMonthlyNotification = true // Faltam 5 ou menos dias
+                            sendMonthlyNotification = true
                         }
                     }
                 }
             }
 
             if (hasResetOccurred) {
-                // Se nos esquecemos de marcar a caixa antes da viragem, a streak quebra e volta a 0
                 val newCount = if (streak.isCompleted) streak.count else 0
 
                 updatedStreaks.add(streak.copy(
                     count = newCount,
                     isCompleted = false,
-                    lastResetDate = System.currentTimeMillis() // Grava a data do novo ciclo
+                    lastResetDate = System.currentTimeMillis()
                 ))
                 needsUpdate = true
             }
         }
 
-        // Guarda as alterações todas na base de dados
         if (needsUpdate && updatedStreaks.isNotEmpty()) {
             dao.updateAll(updatedStreaks)
         }
 
-        // Dispara as notificações necessárias
         if (sendDailyNotification) sendNotification("Atividades Diárias", "Faltam menos de 4 horas! Não percas a tua streak!", 1)
         if (sendWeeklyNotification) sendNotification("Atividades Semanais", "A semana está a terminar. Já fizeste as tarefas?", 2)
         if (sendMonthlyNotification) sendNotification("Atividades Mensais", "O mês está no fim. Mantém as tuas streaks vivas!", 3)

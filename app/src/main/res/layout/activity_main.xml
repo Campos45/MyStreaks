@@ -16,15 +16,37 @@
 
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize">
+            android:layout_height="?attr/actionBarSize"
+            app:contentInsetStart="16dp"
+            app:contentInsetEnd="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="MyStreaks 🔥"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvAppTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="MyStreaks 🔥"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+
+                <TextView
+                    android:id="@+id/tvToggleArchive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📁 Arquivo"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackground"/>
+            </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -37,6 +59,42 @@
         android:paddingTop="8dp"
         android:paddingBottom="100dp"
         tools:listitem="@layout/item_streak"/>
+
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvEmptyEmoji"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🏕️"
+            android:textSize="72sp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/tvEmptyTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nenhuma atividade"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"/>
+
+        <TextView
+            android:id="@+id/tvEmptyDesc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clica em 'Nova' para começares a tua streak!"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabAddStreak"

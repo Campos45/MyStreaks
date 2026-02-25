@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 class StreakRepository(private val streakDao: StreakDao) {
 
-    // O Flow vai emitir os dados automaticamente sempre que a base de dados for alterada
-    val allStreaks: Flow<List<Streak>> = streakDao.getAllStreaks()
+    val activeStreaks: Flow<List<Streak>> = streakDao.getActiveStreaks()
+    val archivedStreaks: Flow<List<Streak>> = streakDao.getArchivedStreaks()
 
     suspend fun insert(streak: Streak) {
         streakDao.insert(streak)
