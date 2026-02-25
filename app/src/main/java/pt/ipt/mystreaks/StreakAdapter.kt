@@ -7,30 +7,25 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import pt.ipt.mystreaks.databinding.ItemStreakBinding
 
-// Este Adapter recebe uma função (onStreakCheckChanged) que vai avisar a MainActivity sempre que clicares numa checkbox
 class StreakAdapter(
-    private val onStreakCheckChanged: (Streak, Boolean) -> Unit
+    private val onStreakCheckChanged: (Streak, Boolean) -> Unit,
+    private val onHistoryClicked: (Streak) -> Unit // NOVO: Listener para o botão do histórico
 ) : ListAdapter<Streak, StreakAdapter.StreakViewHolder>(StreakComparator()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StreakViewHolder {
-        // Usa o ViewBinding para ligar o layout xml (item_streak.xml) ao código
         val binding = ItemStreakBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return StreakViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: StreakViewHolder, position: Int) {
-        val currentItem = getItem(position)
-        holder.bind(currentItem)
+        holder.bind(getItem(position))
     }
 
     inner class StreakViewHolder(private val binding: ItemStreakBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(streak: Streak) {
             binding.tvActivityName.text = streak.name
-
-            // Coloca apenas o número (o emoji de fogo já está no XML)
             binding.tvStreakCount.text = streak.count.toString()
 
-            // Define o texto e as cores da etiqueta consoante a frequência
             val context = binding.root.context
             when (streak.type) {
                 "D" -> {
@@ -56,17 +51,16 @@ class StreakAdapter(
             binding.cbCompleted.setOnCheckedChangeListener { _, isChecked ->
                 onStreakCheckChanged(streak, isChecked)
             }
+
+            // NOVO: Quando clica nos 3 pontinhos
+            binding.ivHistory.setOnClickListener {
+                onHistoryClicked(streak)
+            }
         }
     }
 
-    // O Comparator ajuda o RecyclerView a saber exatamente que itens mudaram para atualizar a lista com uma animação suave
     class StreakComparator : DiffUtil.ItemCallback<Streak>() {
-        override fun areItemsTheSame(oldItem: Streak, newItem: Streak): Boolean {
-            return oldItem.id == newItem.id
-        }
-
-        override fun areContentsTheSame(oldItem: Streak, newItem: Streak): Boolean {
-            return oldItem == newItem
-        }
+        override fun areItemsTheSame(oldItem: Streak, newItem: Streak) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: Streak, newItem: Streak) = oldItem == newItem
     }
 }

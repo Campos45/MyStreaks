@@ -6,14 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-// NOVO: Adicionado AppLog::class e versão subiu para 4
-@Database(entities = [Streak::class, Task::class, AppLog::class], version = 4, exportSchema = false)
+// NOVO: Versão 5!
+@Database(entities = [Streak::class, Task::class, AppLog::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun streakDao(): StreakDao
     abstract fun taskDao(): TaskDao
-    abstract fun appLogDao(): AppLogDao // NOVO
+    abstract fun appLogDao(): AppLogDao
 
     companion object {
         @Volatile

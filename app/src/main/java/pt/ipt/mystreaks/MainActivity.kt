@@ -23,12 +23,9 @@ import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-
     private val database by lazy { AppDatabase.getDatabase(this) }
     private val repository by lazy { StreakRepository(database.streakDao()) }
     private val viewModel: StreakViewModel by viewModels { StreakViewModelFactory(repository) }
-
-    // NOVO: ViewModel dos Logs
     private val logRepository by lazy { LogRepository(database.appLogDao()) }
     private val logViewModel: LogViewModel by viewModels { LogViewModelFactory(logRepository) }
 
@@ -48,53 +45,63 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        adapter = StreakAdapter { streak, isChecked ->
-            if (streak.isCompleted == isChecked) return@StreakAdapter
+        // NOVO: Adicionado o "onHistoryClicked" ao Adaptador
+        adapter = StreakAdapter(
+            onStreakCheckChanged = { streak, isChecked ->
+                if (streak.isCompleted == isChecked) return@StreakAdapter
 
-            if (isShowingArchive) {
-                Toast.makeText(this, "Restaura a atividade primeiro para a marcares!", Toast.LENGTH_SHORT).show()
-                binding.recyclerViewStreaks.adapter?.notifyDataSetChanged()
-                return@StreakAdapter
+                if (isShowingArchive) {
+                    Toast.makeText(this, "Restaura a atividade primeiro para a marcares!", Toast.LENGTH_SHORT).show()
+                    binding.recyclerViewStreaks.adapter?.notifyDataSetChanged()
+                    return@StreakAdapter
+                }
+
+                val newCount = if (isChecked) streak.count + 1 else if (streak.count > 0) streak.count - 1 else 0
+
+                // Grava o dia inicial da streak se estivermos a começar agora
+                var newStartDate = streak.currentStartDate
+                if (isChecked && streak.count == 0) {
+                    newStartDate = System.currentTimeMillis()
+                } else if (!isChecked && newCount == 0) {
+                    newStartDate = null // Retirou e voltou a 0
+                }
+
+                val updatedStreak = streak.copy(count = newCount, isCompleted = isChecked, currentStartDate = newStartDate)
+                viewModel.update(updatedStreak)
+
+                val acao = if (isChecked) "Concluiu" else "Desmarcou"
+                logViewModel.registrarAcao("STREAK", "$acao a atividade '${streak.name}' (Fogo: $newCount)")
+            },
+            onHistoryClicked = { streak ->
+                showStreakHistoryDialog(streak)
             }
-
-            val newCount = if (isChecked) streak.count + 1 else if (streak.count > 0) streak.count - 1 else 0
-            val updatedStreak = streak.copy(count = newCount, isCompleted = isChecked)
-            viewModel.update(updatedStreak)
-
-            // NOVO: Escrever no Diário de Logs!
-            val acao = if (isChecked) "Concluiu" else "Desmarcou"
-            logViewModel.registrarAcao("STREAK", "$acao a atividade '${streak.name}' (Fogo: $newCount)")
-        }
+        )
 
         binding.recyclerViewStreaks.adapter = adapter
         binding.recyclerViewStreaks.layoutManager = LinearLayoutManager(this)
 
         val swipeToDeleteCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
-
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val streak = adapter.currentList[position]
 
                 if (!isShowingArchive) {
                     viewModel.update(streak.copy(isArchived = true))
-                    logViewModel.registrarAcao("STREAK", "Arquivou a atividade '${streak.name}'") // LOG
+                    logViewModel.registrarAcao("STREAK", "Arquivou a atividade '${streak.name}'")
                     Snackbar.make(binding.root, "${streak.name} arquivada 📁", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") {
-                            viewModel.update(streak.copy(isArchived = false))
-                            logViewModel.registrarAcao("STREAK", "Desfez o arquivo de '${streak.name}'") // LOG
-                        }
+                        .setAction("DESFAZER") { viewModel.update(streak.copy(isArchived = false)) }
                         .show()
                 } else {
                     if (direction == ItemTouchHelper.RIGHT) {
                         viewModel.update(streak.copy(isArchived = false))
-                        logViewModel.registrarAcao("STREAK", "Restaurou a atividade '${streak.name}'") // LOG
+                        logViewModel.registrarAcao("STREAK", "Restaurou '${streak.name}'")
                         Snackbar.make(binding.root, "${streak.name} restaurada 🔥", Snackbar.LENGTH_LONG)
                             .setAction("DESFAZER") { viewModel.update(streak.copy(isArchived = true)) }
                             .show()
                     } else {
                         viewModel.delete(streak)
-                        logViewModel.registrarAcao("STREAK", "Eliminou definitivamente '${streak.name}'") // LOG
+                        logViewModel.registrarAcao("STREAK", "Eliminou definitivamente '${streak.name}'")
                         Snackbar.make(binding.root, "${streak.name} eliminada 🗑️", Snackbar.LENGTH_LONG)
                             .setAction("DESFAZER") { viewModel.insert(streak) }
                             .show()
@@ -118,20 +125,50 @@ class MainActivity : AppCompatActivity() {
             isShowingArchive = !isShowingArchive
             refreshUI()
         }
-
         binding.tvNavTasks.setOnClickListener {
-            val intent = android.content.Intent(this, TasksActivity::class.java)
-            startActivity(intent)
+            startActivity(android.content.Intent(this, TasksActivity::class.java))
         }
-
         binding.fabLogs.setOnClickListener {
             startActivity(android.content.Intent(this, LogsActivity::class.java))
         }
-
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
 
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<StreakWorker>(15, java.util.concurrent.TimeUnit.MINUTES).build()
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork("StreakCheck", androidx.work.ExistingPeriodicWorkPolicy.KEEP, workRequest)
+    }
+
+    // NOVO: Mostra a janela do Histórico da Streak
+    private fun showStreakHistoryDialog(streak: Streak) {
+        // Ordena para os recordes maiores aparecerem primeiro (Ordem Decrescente)
+        val sortedHistory = streak.history.sortedByDescending { it.count }
+
+        if (sortedHistory.isEmpty()) {
+            Toast.makeText(this, "Esta atividade ainda não quebrou nenhuma sequência.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+
+        // Cria a lista de texto
+        val historyItems = sortedHistory.mapIndexed { index, record ->
+            val start = sdf.format(java.util.Date(record.startDate))
+            val end = sdf.format(java.util.Date(record.endDate))
+
+            val unit = when(streak.type) {
+                "D" -> if (record.count == 1) "dia" else "dias"
+                "S" -> if (record.count == 1) "semana" else "semanas"
+                "M" -> if (record.count == 1) "mês" else "meses"
+                else -> ""
+            }
+
+            "${index + 1}º -> 🔥 ${record.count} $unit | $start a $end"
+        }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("🏆 Recordes: ${streak.name}")
+            .setItems(historyItems, null)
+            .setPositiveButton("Fechar") { dialog, _ -> dialog.dismiss() }
+            .show()
     }
 
     private fun refreshUI() {
@@ -182,7 +219,7 @@ class MainActivity : AppCompatActivity() {
                         else -> "D"
                     }
                     viewModel.insert(Streak(name = activityName, type = type))
-                    logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)") // LOG
+                    logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)")
                 } else {
                     Toast.makeText(this, "O nome não pode estar vazio", Toast.LENGTH_SHORT).show()
                 }

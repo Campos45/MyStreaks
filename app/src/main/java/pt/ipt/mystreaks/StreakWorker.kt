@@ -13,8 +13,8 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(applicationContext)
         val dao = database.streakDao()
+        val logDao = database.appLogDao() // Para podermos fazer logs no Worker
 
-        // NOVO: Vai buscar apenas as ativas
         val streaks = dao.getActiveStreaksList()
         var needsUpdate = false
         val updatedStreaks = mutableListOf<Streak>()
@@ -59,10 +59,30 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             if (hasResetOccurred) {
                 val newCount = if (streak.isCompleted) streak.count else 0
 
+                var newHistory = streak.history
+                var newCurrentStartDate = streak.currentStartDate
+
+                // SE FALHOU E A STREAK QUEBROU: Grava no histórico!
+                if (!streak.isCompleted && streak.count > 0 && streak.currentStartDate != null) {
+                    val record = StreakRecord(
+                        count = streak.count,
+                        startDate = streak.currentStartDate!!,
+                        endDate = System.currentTimeMillis()
+                    )
+                    newHistory = newHistory + record
+                    newCurrentStartDate = null // Reinicia a data porque quebrou
+
+                    logDao.insertLog(AppLog(type = "STREAK_QUEBRADA", message = "A atividade '${streak.name}' quebrou a sequência de ${streak.count}!"))
+                } else if (!streak.isCompleted) {
+                    newCurrentStartDate = null
+                }
+
                 updatedStreaks.add(streak.copy(
                     count = newCount,
                     isCompleted = false,
-                    lastResetDate = System.currentTimeMillis()
+                    lastResetDate = System.currentTimeMillis(),
+                    history = newHistory,
+                    currentStartDate = newCurrentStartDate
                 ))
                 needsUpdate = true
             }
@@ -82,17 +102,14 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     private fun sendNotification(title: String, message: String, notificationId: Int) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "streak_notifications"
-
         val channel = NotificationChannel(channelId, "Streaks", NotificationManager.IMPORTANCE_HIGH)
         notificationManager.createNotificationChannel(channel)
-
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
-
         notificationManager.notify(notificationId, notification)
     }
 }
