@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
-@Database(entities = [Streak::class], version = 2, exportSchema = false) // Versão 2!
+// NOVO: Adicionámos a Task à lista, mudámos para versão 3 e ativámos os TypeConverters
+@Database(entities = [Streak::class, Task::class], version = 3, exportSchema = false)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun streakDao(): StreakDao
+    abstract fun taskDao(): TaskDao // NOVO
 
     companion object {
         @Volatile
@@ -21,7 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mystreaks_database"
                 )
-                    .fallbackToDestructiveMigration() // Se a versão mudar, recria a tabela sem dar erro
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

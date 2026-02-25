@@ -46,6 +46,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // --- NOVO: Botão para abrir o Ecrã de Tarefas ---
+        binding.tvNavTasks.setOnClickListener {
+            val intent = android.content.Intent(this, TasksActivity::class.java)
+            startActivity(intent)
+        }
+
         // Configurar o Adapter
         adapter = StreakAdapter { streak, isChecked ->
             if (streak.isCompleted == isChecked) return@StreakAdapter

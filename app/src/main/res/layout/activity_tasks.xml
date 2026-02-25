@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    tools:context=".MainActivity">
+    tools:context=".TasksActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -27,32 +27,29 @@
                 android:gravity="center_vertical">
 
                 <TextView
+                    android:id="@+id/btnBack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⬅️"
+                    android:textSize="20sp"
+                    android:paddingEnd="12dp"
+                    android:background="?attr/selectableItemBackground"/>
+
+                <TextView
                     android:id="@+id/tvAppTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="MyStreaks 🔥"
+                    android:text="Tarefas 📝"
                     android:textSize="26sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"/>
 
                 <TextView
-                    android:id="@+id/tvNavTasks"
+                    android:id="@+id/tvToggleCompleted"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📝 Tarefas"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:padding="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="?attr/selectableItemBackground"/>
-
-                <TextView
-                    android:id="@+id/tvToggleArchive"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📁 Arquivo"
+                    android:text="✅ Concluídas"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary"
@@ -63,14 +60,14 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewStreaks"
+        android:id="@+id/recyclerViewTasks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:clipToPadding="false"
         android:paddingTop="8dp"
         android:paddingBottom="100dp"
-        tools:listitem="@layout/item_streak"/>
+        tools:listitem="@layout/item_task"/>
 
     <LinearLayout
         android:id="@+id/layoutEmptyState"
@@ -85,7 +82,7 @@
             android:id="@+id/tvEmptyEmoji"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🏕️"
+            android:text="📋"
             android:textSize="72sp"
             android:layout_marginBottom="16dp"/>
 
@@ -93,7 +90,7 @@
             android:id="@+id/tvEmptyTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nenhuma atividade"
+            android:text="Nenhuma Tarefa"
             android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"/>
@@ -102,14 +99,14 @@
             android:id="@+id/tvEmptyDesc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Clica em 'Nova' para começares a tua streak!"
+            android:text="Clica em 'Nova' para adicionares uma tarefa!"
             android:textSize="16sp"
             android:textColor="@color/text_secondary"
             android:layout_marginTop="8dp"/>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabAddStreak"
+        android:id="@+id/fabAddTask"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
