@@ -28,7 +28,10 @@ class MainActivity : AppCompatActivity() {
     private val repository by lazy { StreakRepository(database.streakDao()) }
     private val viewModel: StreakViewModel by viewModels { StreakViewModelFactory(repository) }
 
-    // Variáveis para controlar qual ecrã estamos a ver
+    // NOVO: ViewModel dos Logs
+    private val logRepository by lazy { LogRepository(database.appLogDao()) }
+    private val logViewModel: LogViewModel by viewModels { LogViewModelFactory(logRepository) }
+
     private var isShowingArchive = false
     private var activeList = emptyList<Streak>()
     private var archivedList = emptyList<Streak>()
@@ -39,39 +42,33 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Permissões
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
 
-        // --- NOVO: Botão para abrir o Ecrã de Tarefas ---
-        binding.tvNavTasks.setOnClickListener {
-            val intent = android.content.Intent(this, TasksActivity::class.java)
-            startActivity(intent)
-        }
-
-        // Configurar o Adapter
         adapter = StreakAdapter { streak, isChecked ->
             if (streak.isCompleted == isChecked) return@StreakAdapter
 
-            // Se o utilizador tentar clicar na checkbox no arquivo, mandamos avisar para restaurar primeiro!
             if (isShowingArchive) {
                 Toast.makeText(this, "Restaura a atividade primeiro para a marcares!", Toast.LENGTH_SHORT).show()
-                binding.recyclerViewStreaks.adapter?.notifyDataSetChanged() // Força a checkbox a não mudar visualmente
+                binding.recyclerViewStreaks.adapter?.notifyDataSetChanged()
                 return@StreakAdapter
             }
 
             val newCount = if (isChecked) streak.count + 1 else if (streak.count > 0) streak.count - 1 else 0
             val updatedStreak = streak.copy(count = newCount, isCompleted = isChecked)
             viewModel.update(updatedStreak)
+
+            // NOVO: Escrever no Diário de Logs!
+            val acao = if (isChecked) "Concluiu" else "Desmarcou"
+            logViewModel.registrarAcao("STREAK", "$acao a atividade '${streak.name}' (Fogo: $newCount)")
         }
 
         binding.recyclerViewStreaks.adapter = adapter
         binding.recyclerViewStreaks.layoutManager = LinearLayoutManager(this)
 
-        // Lógica Inteligente dos Swipes!
         val swipeToDeleteCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
 
@@ -80,22 +77,24 @@ class MainActivity : AppCompatActivity() {
                 val streak = adapter.currentList[position]
 
                 if (!isShowingArchive) {
-                    // SE ESTAMOS NO PRINCIPAL: Deslizar = ARQUIVAR
                     viewModel.update(streak.copy(isArchived = true))
+                    logViewModel.registrarAcao("STREAK", "Arquivou a atividade '${streak.name}'") // LOG
                     Snackbar.make(binding.root, "${streak.name} arquivada 📁", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(streak.copy(isArchived = false)) }
+                        .setAction("DESFAZER") {
+                            viewModel.update(streak.copy(isArchived = false))
+                            logViewModel.registrarAcao("STREAK", "Desfez o arquivo de '${streak.name}'") // LOG
+                        }
                         .show()
                 } else {
-                    // SE ESTAMOS NO ARQUIVO
                     if (direction == ItemTouchHelper.RIGHT) {
-                        // Deslizar Direita = RESTAURAR
                         viewModel.update(streak.copy(isArchived = false))
+                        logViewModel.registrarAcao("STREAK", "Restaurou a atividade '${streak.name}'") // LOG
                         Snackbar.make(binding.root, "${streak.name} restaurada 🔥", Snackbar.LENGTH_LONG)
                             .setAction("DESFAZER") { viewModel.update(streak.copy(isArchived = true)) }
                             .show()
                     } else {
-                        // Deslizar Esquerda = ELIMINAR DE VEZ
                         viewModel.delete(streak)
+                        logViewModel.registrarAcao("STREAK", "Eliminou definitivamente '${streak.name}'") // LOG
                         Snackbar.make(binding.root, "${streak.name} eliminada 🗑️", Snackbar.LENGTH_LONG)
                             .setAction("DESFAZER") { viewModel.insert(streak) }
                             .show()
@@ -105,22 +104,28 @@ class MainActivity : AppCompatActivity() {
         }
         ItemTouchHelper(swipeToDeleteCallback).attachToRecyclerView(binding.recyclerViewStreaks)
 
-        // Observar Ativas
         viewModel.activeStreaks.observe(this) { streaks ->
             activeList = streaks ?: emptyList()
             if (!isShowingArchive) refreshUI()
         }
 
-        // Observar Arquivadas
         viewModel.archivedStreaks.observe(this) { streaks ->
             archivedList = streaks ?: emptyList()
             if (isShowingArchive) refreshUI()
         }
 
-        // O Botão de Alternar o Ecrã
         binding.tvToggleArchive.setOnClickListener {
             isShowingArchive = !isShowingArchive
             refreshUI()
+        }
+
+        binding.tvNavTasks.setOnClickListener {
+            val intent = android.content.Intent(this, TasksActivity::class.java)
+            startActivity(intent)
+        }
+
+        binding.fabLogs.setOnClickListener {
+            startActivity(android.content.Intent(this, LogsActivity::class.java))
         }
 
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
@@ -129,7 +134,6 @@ class MainActivity : AppCompatActivity() {
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork("StreakCheck", androidx.work.ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
 
-    // Função que redesenha o ecrã conforme estamos no Arquivo ou não
     private fun refreshUI() {
         val currentList = if (isShowingArchive) archivedList else activeList
         adapter.submitList(currentList)
@@ -137,8 +141,6 @@ class MainActivity : AppCompatActivity() {
         if (currentList.isEmpty()) {
             binding.recyclerViewStreaks.visibility = View.GONE
             binding.layoutEmptyState.visibility = View.VISIBLE
-
-            // Muda o texto da "Tenda" se for o arquivo que estiver vazio
             if (isShowingArchive) {
                 binding.tvEmptyEmoji.text = "🗄️"
                 binding.tvEmptyTitle.text = "Arquivo Vazio"
@@ -153,7 +155,6 @@ class MainActivity : AppCompatActivity() {
             binding.layoutEmptyState.visibility = View.GONE
         }
 
-        // Se estivermos no arquivo, esconde o botão '+' e muda o nome do topo
         if (isShowingArchive) {
             binding.fabAddStreak.hide()
             binding.tvAppTitle.text = "Arquivo 🗄️"
@@ -181,6 +182,7 @@ class MainActivity : AppCompatActivity() {
                         else -> "D"
                     }
                     viewModel.insert(Streak(name = activityName, type = type))
+                    logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)") // LOG
                 } else {
                     Toast.makeText(this, "O nome não pode estar vazio", Toast.LENGTH_SHORT).show()
                 }

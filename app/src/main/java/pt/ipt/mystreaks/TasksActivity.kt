@@ -21,6 +21,10 @@ class TasksActivity : AppCompatActivity() {
     private val repository by lazy { TaskRepository(database.taskDao()) }
     private val viewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
 
+    // NOVO: ViewModel dos Logs
+    private val logRepository by lazy { LogRepository(database.appLogDao()) }
+    private val logViewModel: LogViewModel by viewModels { LogViewModelFactory(logRepository) }
+
     private var isShowingCompleted = false
     private var pendingList = emptyList<Task>()
     private var completedList = emptyList<Task>()
@@ -31,22 +35,27 @@ class TasksActivity : AppCompatActivity() {
         binding = ActivityTasksBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnBack.setOnClickListener { finish() } // Fecha este ecrã e volta ao principal
+        binding.btnBack.setOnClickListener { finish() }
 
         adapter = TaskAdapter { updatedTask ->
             viewModel.update(updatedTask)
+            // NOVO: Registar alteração da Tarefa nos Logs
+            val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
+            logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
         }
 
         binding.recyclerViewTasks.adapter = adapter
         binding.recyclerViewTasks.layoutManager = LinearLayoutManager(this)
 
-        // Swipe para eliminar
         val swipeToDeleteCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val task = adapter.currentList[position]
                 viewModel.delete(task)
+
+                logViewModel.registrarAcao("TAREFA", "Eliminou a tarefa '${task.name}'") // LOG
+
                 Snackbar.make(binding.root, "Tarefa eliminada 🗑️", Snackbar.LENGTH_LONG)
                     .setAction("DESFAZER") { viewModel.insert(task) }
                     .show()
@@ -113,7 +122,6 @@ class TasksActivity : AppCompatActivity() {
                 val subTasksText = dialogBinding.etSubTasks.text.toString()
 
                 if (taskName.isNotBlank()) {
-                    // O Segredo: Separa o texto por linhas e cria um sub-passo para cada linha!
                     val subTasksList = if (subTasksText.isNotBlank()) {
                         subTasksText.lines()
                             .filter { it.isNotBlank() }
@@ -121,8 +129,9 @@ class TasksActivity : AppCompatActivity() {
                     } else {
                         emptyList()
                     }
-
                     viewModel.insert(Task(name = taskName, subTasks = subTasksList))
+
+                    logViewModel.registrarAcao("TAREFA_NOVA", "Criou a tarefa '$taskName' com ${subTasksList.size} sub-passo(s)") // LOG
                 } else {
                     Toast.makeText(this, "O nome da tarefa não pode estar vazio", Toast.LENGTH_SHORT).show()
                 }
