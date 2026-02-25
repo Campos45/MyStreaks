@@ -67,15 +67,4 @@ Interface: XML Layouts, ViewBinding, Material Components, ItemTouchHelper (Swipe
 
 Widgets: AppWidgetProvider & RemoteViewsService
 
-🚀 Como Instalar e Correr
-Clona este repositório:
 
-Bash
-git clone https://github.com/TEU_NOME_DE_UTILIZADOR/MyStreaks.git
-Abre o projeto no Android Studio.
-
-Deixa o Gradle sincronizar todas as dependências (pode demorar alguns minutos).
-
-Conecta o teu telemóvel por USB (com USB Debugging ativo) ou inicia um Emulador Android.
-
-Clica no botão Run (Shift + F10) ou gera o APK através do menu Build > Build Bundle(s) / APK(s) > Build APK(s).
