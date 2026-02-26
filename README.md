@@ -1,4 +1,5 @@
 MyStreaks 🔥
+
 MyStreaks é uma aplicação nativa para Android, desenvolvida em Kotlin, desenhada para ser o teu hub pessoal de produtividade. Permite monitorizar a construção de hábitos diários, semanais e mensais (Streaks), bem como gerir tarefas únicas com sub-passos detalhados.
 
 Com uma interface moderna, gamificação integrada, e funcionalidades avançadas de persistência de dados e processos em segundo plano, a MyStreaks ajuda-te a não quebrar a corrente!
