@@ -21,7 +21,8 @@ data class Streak(
     var remindHour: Int? = null,
     var remindMinute: Int? = null,
     var remindExtra: Int? = null,
+    var tag: String? = null,
 
-    // NOVO: A nossa categoria/tag
-    var tag: String? = null
+    // NOVO: Guarda a lista de dias em que a tarefa foi feita
+    var completedDates: List<Long> = emptyList()
 )

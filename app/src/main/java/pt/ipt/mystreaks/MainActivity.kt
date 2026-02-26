@@ -71,7 +71,25 @@ class MainActivity : AppCompatActivity() {
                     newStartDate = null
                 }
 
-                val updatedStreak = streak.copy(count = newCount, isCompleted = isChecked, currentStartDate = newStartDate)
+                // NOVO: Regista o dia exato no calendário (Normalizado para a meia-noite para não haver erros de horas)
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                cal.set(java.util.Calendar.MINUTE, 0)
+                cal.set(java.util.Calendar.SECOND, 0)
+                cal.set(java.util.Calendar.MILLISECOND, 0)
+                val todayMidnight = cal.timeInMillis
+
+                val updatedDates = streak.completedDates.toMutableList()
+                if (isChecked) {
+                    if (!updatedDates.contains(todayMidnight)) updatedDates.add(todayMidnight)
+                } else {
+                    updatedDates.remove(todayMidnight)
+                }
+
+                val updatedStreak = streak.copy(
+                    count = newCount, isCompleted = isChecked,
+                    currentStartDate = newStartDate, completedDates = updatedDates // Guarda as datas!
+                )
                 viewModel.update(updatedStreak)
 
                 val acao = if (isChecked) "Concluiu" else "Desmarcou"
@@ -191,33 +209,59 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showStreakHistoryDialog(streak: Streak) {
-        val sortedHistory = streak.history.sortedByDescending { it.count }
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_calendar, null)
+        val tvMonthName = dialogView.findViewById<android.widget.TextView>(R.id.tvMonthName)
+        val rvCalendar = dialogView.findViewById<RecyclerView>(R.id.rvCalendar)
+        val tvRecordsList = dialogView.findViewById<android.widget.TextView>(R.id.tvRecordsList)
 
-        if (sortedHistory.isEmpty()) {
-            Toast.makeText(this, "Esta atividade ainda não quebrou nenhuma sequência.", Toast.LENGTH_SHORT).show()
-            return
+        val calendar = java.util.Calendar.getInstance()
+        val currentMonth = calendar.get(java.util.Calendar.MONTH)
+        val currentYear = calendar.get(java.util.Calendar.YEAR)
+
+        val monthNames = arrayOf("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
+        tvMonthName.text = "${monthNames[currentMonth]} $currentYear"
+
+        // Constrói a lista de dias do calendário
+        calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        val firstDayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1 // 0=Dom, 1=Seg...
+        val daysInMonth = calendar.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+
+        val daysList = mutableListOf<CalendarDay>()
+
+        // Espaços vazios antes do dia 1 (para o mês começar no dia da semana correto)
+        for (i in 0 until firstDayOfWeek) { daysList.add(CalendarDay("", false, false)) }
+
+        // Dias reais do mês
+        for (i in 1..daysInMonth) {
+            val checkCal = java.util.Calendar.getInstance()
+            checkCal.set(currentYear, currentMonth, i, 0, 0, 0)
+            checkCal.set(java.util.Calendar.MILLISECOND, 0)
+
+            val isCompleted = streak.completedDates.contains(checkCal.timeInMillis)
+            daysList.add(CalendarDay(i.toString(), isCompleted, true))
         }
 
-        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+        rvCalendar.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 7)
+        rvCalendar.adapter = CalendarAdapter(daysList)
 
-        val historyItems = sortedHistory.mapIndexed { index, record ->
-            val start = sdf.format(java.util.Date(record.startDate))
-            val end = sdf.format(java.util.Date(record.endDate))
-
-            val unit = when(streak.type) {
-                "D" -> if (record.count == 1) "dia" else "dias"
-                "S" -> if (record.count == 1) "semana" else "semanas"
-                "M" -> if (record.count == 1) "mês" else "meses"
-                else -> ""
+        // Preenche o histórico de Recordes em texto que já tínhamos
+        val sortedHistory = streak.history.sortedByDescending { it.count }
+        if (sortedHistory.isEmpty()) {
+            tvRecordsList.text = "Ainda não tens recordes guardados."
+        } else {
+            val sdf = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+            val sb = java.lang.StringBuilder()
+            sortedHistory.take(5).forEachIndexed { index, record ->
+                val start = sdf.format(java.util.Date(record.startDate))
+                val end = sdf.format(java.util.Date(record.endDate))
+                sb.append("${index + 1}º -> 🔥 ${record.count} dias | $start a $end\n")
             }
-
-            "${index + 1}º -> 🔥 ${record.count} $unit | $start a $end"
-        }.toTypedArray()
+            tvRecordsList.text = sb.toString()
+        }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("🏆 Recordes: ${streak.name}")
-            .setItems(historyItems, null)
-            .setPositiveButton("Fechar") { dialog, _ -> dialog.dismiss() }
+            .setView(dialogView)
+            .setPositiveButton("Fechar", null)
             .show()
     }
 

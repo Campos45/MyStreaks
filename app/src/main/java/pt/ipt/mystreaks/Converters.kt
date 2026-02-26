@@ -23,4 +23,16 @@ class Converters {
         val listType = object : TypeToken<List<StreakRecord>>() {}.type
         return Gson().fromJson(value, listType) ?: emptyList()
     }
+
+    // Adiciona isto dentro da tua classe Converters
+    @androidx.room.TypeConverter
+    fun fromLongList(value: List<Long>?): String {
+        return com.google.gson.Gson().toJson(value)
+    }
+
+    @androidx.room.TypeConverter
+    fun toLongList(value: String): List<Long> {
+        val listType = object : com.google.gson.reflect.TypeToken<List<Long>>() {}.type
+        return com.google.gson.Gson().fromJson(value, listType) ?: emptyList()
+    }
 }
