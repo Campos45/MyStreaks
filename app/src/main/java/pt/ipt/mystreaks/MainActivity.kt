@@ -176,6 +176,9 @@ class MainActivity : AppCompatActivity() {
         binding.tvNavTasks.setOnClickListener {
             startActivity(Intent(this, TasksActivity::class.java))
         }
+        binding.tvNavMedals.setOnClickListener {
+            startActivity(android.content.Intent(this, MedalsActivity::class.java))
+        }
         binding.fabLogs.setOnClickListener {
             startActivity(Intent(this, LogsActivity::class.java))
         }

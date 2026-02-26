@@ -26,6 +26,8 @@
         <activity android:name=".TasksActivity" android:exported="false" />
         <activity android:name=".LogsActivity" android:exported="false" />
 
+        <activity android:name=".MedalsActivity" android:exported="false" />
+
         <receiver android:name=".StreakWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
