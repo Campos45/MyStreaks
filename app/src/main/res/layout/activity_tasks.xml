@@ -117,4 +117,14 @@
         app:iconTint="@color/surface"
         android:backgroundTint="@color/primary" />
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieConfetti"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:lottie_rawRes="@raw/confetti"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        android:elevation="10dp"
+        android:visibility="gone" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

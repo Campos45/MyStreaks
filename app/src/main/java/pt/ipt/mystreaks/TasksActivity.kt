@@ -41,11 +41,17 @@ class TasksActivity : AppCompatActivity() {
         adapter = TaskAdapter(
             onTaskUpdate = { updatedTask ->
                 viewModel.update(updatedTask)
+
+                // --- NOVO: SE A TAREFA ACABOU DE FICAR CONCLUÍDA, FESTA! 🎉 ---
+                if (updatedTask.isCompleted) {
+                    playConfettiAnimation()
+                }
+
                 val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
                 logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
             },
             onEditClicked = { task ->
-                showAddTaskDialog(task) // Abrir a mesma janela, mas com a tarefa a editar
+                showAddTaskDialog(task)
             }
         )
 
@@ -187,5 +193,20 @@ class TasksActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
             .show()
+    }
+
+    private fun playConfettiAnimation() {
+        binding.lottieConfetti.visibility = View.VISIBLE
+        binding.lottieConfetti.playAnimation()
+
+        // Dizemos à aplicação para esconder a animação quando ela terminar de chover
+        binding.lottieConfetti.addAnimatorListener(object : android.animation.Animator.AnimatorListener {
+            override fun onAnimationStart(animation: android.animation.Animator) {}
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                binding.lottieConfetti.visibility = View.GONE
+            }
+            override fun onAnimationCancel(animation: android.animation.Animator) {}
+            override fun onAnimationRepeat(animation: android.animation.Animator) {}
+        })
     }
 }
