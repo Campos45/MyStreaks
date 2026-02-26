@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CheckBox xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/cbSubTask"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="Sub-passo"
-    android:textSize="16sp"
-    android:buttonTint="@color/primary"
+    android:textSize="14sp"
     android:paddingStart="8dp"
-    android:layout_marginBottom="4dp"/>
+    android:textColor="@color/text_primary"
+    app:buttonTint="@color/primary"/>
