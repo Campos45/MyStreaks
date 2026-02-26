@@ -1,6 +1,7 @@
 package pt.ipt.mystreaks
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -9,7 +10,8 @@ import pt.ipt.mystreaks.databinding.ItemStreakBinding
 
 class StreakAdapter(
     private val onStreakCheckChanged: (Streak, Boolean) -> Unit,
-    private val onHistoryClicked: (Streak) -> Unit // NOVO: Listener para o botão do histórico
+    private val onHistoryClicked: (Streak) -> Unit,
+    private val onEditClicked: (Streak) -> Unit // NOVO: Botão Lápis
 ) : ListAdapter<Streak, StreakAdapter.StreakViewHolder>(StreakComparator()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StreakViewHolder {
@@ -45,6 +47,14 @@ class StreakAdapter(
                 }
             }
 
+            // Mostrar a Etiqueta (Tag)
+            if (!streak.tag.isNullOrBlank()) {
+                binding.tvTag.visibility = View.VISIBLE
+                binding.tvTag.text = streak.tag
+            } else {
+                binding.tvTag.visibility = View.GONE
+            }
+
             binding.cbCompleted.setOnCheckedChangeListener(null)
             binding.cbCompleted.isChecked = streak.isCompleted
 
@@ -52,10 +62,8 @@ class StreakAdapter(
                 onStreakCheckChanged(streak, isChecked)
             }
 
-            // NOVO: Quando clica nos 3 pontinhos
-            binding.ivHistory.setOnClickListener {
-                onHistoryClicked(streak)
-            }
+            binding.ivHistory.setOnClickListener { onHistoryClicked(streak) }
+            binding.ivEdit.setOnClickListener { onEditClicked(streak) } // NOVO: Evento de Editar
         }
     }
 

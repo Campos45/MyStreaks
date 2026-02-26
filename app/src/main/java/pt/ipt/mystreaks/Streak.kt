@@ -18,9 +18,10 @@ data class Streak(
     var currentStartDate: Long? = null,
     var history: List<StreakRecord> = emptyList(),
     var orderIndex: Int = 0,
-
-    // NOVO: Campos para as Notificações Personalizadas
     var remindHour: Int? = null,
     var remindMinute: Int? = null,
-    var remindExtra: Int? = null // Guarda o Dia da Semana (1 a 7) ou Dia do Mês (1 a 31)
+    var remindExtra: Int? = null,
+
+    // NOVO: A nossa categoria/tag
+    var tag: String? = null
 )

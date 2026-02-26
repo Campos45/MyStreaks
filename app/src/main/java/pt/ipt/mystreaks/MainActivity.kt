@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var activeList = emptyList<Streak>()
     private var archivedList = emptyList<Streak>()
     private lateinit var adapter: StreakAdapter
+    private var currentTagFilter: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,9 +77,8 @@ class MainActivity : AppCompatActivity() {
                 val acao = if (isChecked) "Concluiu" else "Desmarcou"
                 logViewModel.registrarAcao("STREAK", "$acao a atividade '${streak.name}' (Fogo: $newCount)")
             },
-            onHistoryClicked = { streak ->
-                showStreakHistoryDialog(streak)
-            }
+            onHistoryClicked = { streak -> showStreakHistoryDialog(streak) },
+            onEditClicked = { streak -> showAddStreakDialog(streak) } // NOVO
         )
 
         binding.recyclerViewStreaks.adapter = adapter
@@ -163,6 +163,29 @@ class MainActivity : AppCompatActivity() {
         }
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
 
+        // --- NOVO: LÓGICA DO FILTRO ---
+        binding.ivFilter.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val tags = database.streakDao().getAllTagsSync()
+                withContext(Dispatchers.Main) {
+                    if (tags.isEmpty()) {
+                        Toast.makeText(this@MainActivity, "Ainda não tens categorias criadas.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    // Adiciona a opção de ver todas as streaks no topo da lista
+                    val options = arrayOf("🌟 Todas") + tags.toTypedArray()
+
+                    MaterialAlertDialogBuilder(this@MainActivity)
+                        .setTitle("Filtrar por Categoria")
+                        .setItems(options) { _, which ->
+                            currentTagFilter = if (which == 0) null else options[which]
+                            refreshUI() // Atualiza o ecrã com o novo filtro
+                        }
+                        .show()
+                }
+            }
+        }
+
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<StreakWorker>(15, java.util.concurrent.TimeUnit.MINUTES).build()
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork("StreakCheck", androidx.work.ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
@@ -199,7 +222,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshUI() {
-        val currentList = if (isShowingArchive) archivedList else activeList
+        val baseList = if (isShowingArchive) archivedList else activeList
+
+        // Aplica o filtro se existir um selecionado
+        val currentList = if (currentTagFilter != null) {
+            baseList.filter { it.tag == currentTagFilter }
+        } else {
+            baseList
+        }
         adapter.submitList(currentList)
 
         if (currentList.isEmpty()) {
@@ -241,10 +271,42 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun showAddStreakDialog() {
+    private fun showAddStreakDialog(streakToEdit: Streak? = null) {
         val dialogBinding = DialogAddStreakBinding.inflate(LayoutInflater.from(this))
-        var selectedHour: Int? = null
-        var selectedMinute: Int? = null
+        val isEditing = streakToEdit != null
+
+        var selectedHour: Int? = streakToEdit?.remindHour
+        var selectedMinute: Int? = streakToEdit?.remindMinute
+
+        // --- PREENCHE OS CAMPOS SE ESTIVERMOS A EDITAR ---
+        if (isEditing) {
+            dialogBinding.etActivityName.setText(streakToEdit!!.name)
+            dialogBinding.etTag.setText(streakToEdit.tag ?: "")
+
+            when (streakToEdit.type) {
+                "D" -> dialogBinding.rgFrequency.check(R.id.rbDaily)
+                "S" -> dialogBinding.rgFrequency.check(R.id.rbWeekly)
+                "M" -> dialogBinding.rgFrequency.check(R.id.rbMonthly)
+            }
+
+            if (selectedHour != null && selectedMinute != null) {
+                dialogBinding.switchReminder.isChecked = true
+                dialogBinding.layoutReminderDetails.visibility = View.VISIBLE
+                dialogBinding.btnTimePicker.text = String.format("Hora: %02d:%02d", selectedHour, selectedMinute)
+                if (streakToEdit.type != "D" && streakToEdit.remindExtra != null) {
+                    dialogBinding.etExtraDay.setText(streakToEdit.remindExtra.toString())
+                }
+            }
+        }
+
+        // Carregar Tags para as Sugestões Dropdown
+        lifecycleScope.launch(Dispatchers.IO) {
+            val existingTags = database.streakDao().getAllTagsSync()
+            withContext(Dispatchers.Main) {
+                val arrayAdapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, existingTags)
+                dialogBinding.etTag.setAdapter(arrayAdapter)
+            }
+        }
 
         dialogBinding.switchReminder.setOnCheckedChangeListener { _, isChecked ->
             dialogBinding.layoutReminderDetails.visibility = if (isChecked) View.VISIBLE else View.GONE
@@ -270,6 +332,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         MaterialAlertDialogBuilder(this)
+            .setTitle(if (isEditing) "Editar Atividade" else "Nova Atividade")
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { dialog, _ ->
                 val activityName = dialogBinding.etActivityName.text.toString()
@@ -282,29 +345,43 @@ class MainActivity : AppCompatActivity() {
                         else -> "D"
                     }
 
-                    var extraDay: Int? = null
-                    if (dialogBinding.switchReminder.isChecked && type != "D") {
-                        extraDay = dialogBinding.etExtraDay.text.toString().toIntOrNull()
-                    }
+                    val finalExtraDay = if (dialogBinding.switchReminder.isChecked && type != "D") {
+                        dialogBinding.etExtraDay.text.toString().toIntOrNull()
+                    } else { null }
+
                     if (!dialogBinding.switchReminder.isChecked) {
                         selectedHour = null
                         selectedMinute = null
                     }
 
-                    val newStreak = Streak(
-                        name = activityName, type = type,
-                        remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = extraDay
-                    )
+                    val tagName = dialogBinding.etTag.text.toString().trim()
+                    val finalTag = if (tagName.isNotEmpty()) tagName else null
 
-                    viewModel.insert(newStreak)
-                    logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)")
+                    // SE FOR EDIÇÃO, ATUALIZA. SE FOR NOVA, INSERE.
+                    if (isEditing) {
+                        val updatedStreak = streakToEdit!!.copy(
+                            name = activityName, type = type,
+                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay,
+                            tag = finalTag
+                        )
+                        viewModel.update(updatedStreak)
+                        logViewModel.registrarAcao("STREAK_EDIT", "Editou a atividade '$activityName'")
+                    } else {
+                        val newStreak = Streak(
+                            name = activityName, type = type,
+                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay,
+                            tag = finalTag
+                        )
+                        viewModel.insert(newStreak)
+                        logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)")
+                    }
 
+                    // Agenda o alarme se foi ativado
                     if (selectedHour != null && selectedMinute != null) {
                         lifecycleScope.launch(Dispatchers.IO) {
-                            delay(500)
+                            kotlinx.coroutines.delay(500)
                             val streaks = database.streakDao().getActiveStreaksList()
                             val insertedStreak = streaks.find { it.name == activityName && it.remindHour == selectedHour }
-
                             if (insertedStreak != null) {
                                 withContext(Dispatchers.Main) {
                                     scheduleStreakAlarm(insertedStreak)
@@ -321,7 +398,6 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
             .show()
     }
-
     private fun scheduleStreakAlarm(streak: Streak) {
         if (streak.remindHour == null || streak.remindMinute == null) return
 
