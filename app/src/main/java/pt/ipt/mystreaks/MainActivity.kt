@@ -298,11 +298,11 @@ class MainActivity : AppCompatActivity() {
 
         if (isShowingArchive) {
             binding.fabAddStreak.hide()
-            binding.tvAppTitle.text = "Arquivo 🗄️"
+            binding.tvAppTitle.text = "🗄️" // Fica apenas o emoji do arquivo
             binding.tvToggleArchive.text = "⬅️ Voltar"
         } else {
             binding.fabAddStreak.show()
-            binding.tvAppTitle.text = "MyStreaks 🔥"
+            binding.tvAppTitle.text = "🔥" // Fica apenas o emoji do fogo
             binding.tvToggleArchive.text = "📁 Arquivo"
         }
 
