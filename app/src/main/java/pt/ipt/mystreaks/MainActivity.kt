@@ -1,6 +1,7 @@
 package pt.ipt.mystreaks
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -12,14 +13,18 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import pt.ipt.mystreaks.databinding.ActivityMainBinding
 import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
-import pt.ipt.mystreaks.R
 
 class MainActivity : AppCompatActivity() {
 
@@ -79,32 +84,26 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerViewStreaks.adapter = adapter
         binding.recyclerViewStreaks.layoutManager = LinearLayoutManager(this)
 
-        // --- INÍCIO DA ZONA ALTERADA PARA O DRAG & DROP ---
         val swipeAndDragCallback = object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN, // Permite arrastar para cima e baixo
-            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT // Permite deslizar
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                if (isShowingArchive) return false // No arquivo não deixamos reordenar
+                if (isShowingArchive) return false
 
                 val fromPosition = viewHolder.adapterPosition
                 val toPosition = target.adapterPosition
 
-                // Cria uma cópia da lista atual mutável
                 val currentList = adapter.currentList.toMutableList()
-
-                // Troca os itens de posição na memória
                 val itemMoved = currentList.removeAt(fromPosition)
                 currentList.add(toPosition, itemMoved)
 
-                // Atualiza o ecrã instantaneamente
                 adapter.submitList(currentList)
 
-                // Atualiza a posição (orderIndex) na base de dados
                 currentList.forEachIndexed { index, streak ->
                     if (streak.orderIndex != index) {
                         viewModel.update(streak.copy(orderIndex = index))
@@ -141,7 +140,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         ItemTouchHelper(swipeAndDragCallback).attachToRecyclerView(binding.recyclerViewStreaks)
-        // --- FIM DA ZONA ALTERADA ---
 
         viewModel.activeStreaks.observe(this) { streaks ->
             activeList = streaks ?: emptyList()
@@ -158,10 +156,10 @@ class MainActivity : AppCompatActivity() {
             refreshUI()
         }
         binding.tvNavTasks.setOnClickListener {
-            startActivity(android.content.Intent(this, TasksActivity::class.java))
+            startActivity(Intent(this, TasksActivity::class.java))
         }
         binding.fabLogs.setOnClickListener {
-            startActivity(android.content.Intent(this, LogsActivity::class.java))
+            startActivity(Intent(this, LogsActivity::class.java))
         }
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
 
@@ -231,7 +229,6 @@ class MainActivity : AppCompatActivity() {
             binding.tvToggleArchive.text = "📁 Arquivo"
         }
 
-        // --- SOLUÇÃO DO ECRÃ PRETO (CORRER EM SEGUNDO PLANO) ---
         Thread {
             try {
                 val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this@MainActivity)
@@ -246,6 +243,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAddStreakDialog() {
         val dialogBinding = DialogAddStreakBinding.inflate(LayoutInflater.from(this))
+        var selectedHour: Int? = null
+        var selectedMinute: Int? = null
+
+        dialogBinding.switchReminder.setOnCheckedChangeListener { _, isChecked ->
+            dialogBinding.layoutReminderDetails.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
+        dialogBinding.rgFrequency.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == R.id.rbDaily) {
+                dialogBinding.layoutExtraDay.visibility = View.GONE
+            } else {
+                dialogBinding.layoutExtraDay.visibility = View.VISIBLE
+                if (checkedId == R.id.rbWeekly) dialogBinding.layoutExtraDay.hint = "Dia da Semana (1=Dom... 7=Sáb)"
+                if (checkedId == R.id.rbMonthly) dialogBinding.layoutExtraDay.hint = "Dia do Mês (1 a 31)"
+            }
+        }
+
+        dialogBinding.btnTimePicker.setOnClickListener {
+            val calendar = java.util.Calendar.getInstance()
+            android.app.TimePickerDialog(this, { _, hourOfDay, minute ->
+                selectedHour = hourOfDay
+                selectedMinute = minute
+                dialogBinding.btnTimePicker.text = String.format("Hora: %02d:%02d", hourOfDay, minute)
+            }, calendar.get(java.util.Calendar.HOUR_OF_DAY), calendar.get(java.util.Calendar.MINUTE), true).show()
+        }
+
         MaterialAlertDialogBuilder(this)
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { dialog, _ ->
@@ -254,13 +277,42 @@ class MainActivity : AppCompatActivity() {
                     val selectedTypeId = dialogBinding.rgFrequency.checkedRadioButtonId
                     val selectedRadioButton = dialogBinding.root.findViewById<RadioButton>(selectedTypeId)
                     val type = when (selectedRadioButton.text.toString()) {
-                        "Diária" -> "D"
                         "Semanal" -> "S"
                         "Mensal" -> "M"
                         else -> "D"
                     }
-                    viewModel.insert(Streak(name = activityName, type = type))
+
+                    var extraDay: Int? = null
+                    if (dialogBinding.switchReminder.isChecked && type != "D") {
+                        extraDay = dialogBinding.etExtraDay.text.toString().toIntOrNull()
+                    }
+                    if (!dialogBinding.switchReminder.isChecked) {
+                        selectedHour = null
+                        selectedMinute = null
+                    }
+
+                    val newStreak = Streak(
+                        name = activityName, type = type,
+                        remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = extraDay
+                    )
+
+                    viewModel.insert(newStreak)
                     logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)")
+
+                    if (selectedHour != null && selectedMinute != null) {
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            delay(500)
+                            val streaks = database.streakDao().getActiveStreaksList()
+                            val insertedStreak = streaks.find { it.name == activityName && it.remindHour == selectedHour }
+
+                            if (insertedStreak != null) {
+                                withContext(Dispatchers.Main) {
+                                    scheduleStreakAlarm(insertedStreak)
+                                }
+                            }
+                        }
+                    }
+
                 } else {
                     Toast.makeText(this, "O nome não pode estar vazio", Toast.LENGTH_SHORT).show()
                 }
@@ -268,5 +320,44 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
             .show()
+    }
+
+    private fun scheduleStreakAlarm(streak: Streak) {
+        if (streak.remindHour == null || streak.remindMinute == null) return
+
+        val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = Intent(this, StreakAlarmReceiver::class.java).apply {
+            putExtra("STREAK_ID", streak.id)
+        }
+        val pendingIntent = android.app.PendingIntent.getBroadcast(
+            this, streak.id, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, streak.remindHour!!)
+        calendar.set(java.util.Calendar.MINUTE, streak.remindMinute!!)
+        calendar.set(java.util.Calendar.SECOND, 0)
+
+        when (streak.type) {
+            "D" -> {
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+            }
+            "S" -> {
+                val targetDay = streak.remindExtra ?: java.util.Calendar.MONDAY
+                calendar.set(java.util.Calendar.DAY_OF_WEEK, targetDay)
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+            }
+            "M" -> {
+                val targetDay = streak.remindExtra ?: 1
+                calendar.set(java.util.Calendar.DAY_OF_MONTH, targetDay)
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.MONTH, 1)
+            }
+        }
+
+        try {
+            alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        } catch (e: SecurityException) {
+            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        }
     }
 }

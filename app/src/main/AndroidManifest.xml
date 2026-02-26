@@ -36,6 +36,8 @@
         <service android:name=".StreakWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
+
+        <receiver android:name=".StreakAlarmReceiver" android:exported="false" />
     </application>
 
 </manifest>

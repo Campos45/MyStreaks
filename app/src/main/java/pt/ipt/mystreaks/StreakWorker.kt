@@ -2,7 +2,9 @@ package pt.ipt.mystreaks
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -13,16 +15,11 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(applicationContext)
         val dao = database.streakDao()
-        val logDao = database.appLogDao() // Para podermos fazer logs no Worker
+        val logDao = database.appLogDao()
 
         val streaks = dao.getActiveStreaksList()
         var needsUpdate = false
         val updatedStreaks = mutableListOf<Streak>()
-
-        var sendDailyNotification = false
-        var sendWeeklyNotification = false
-        var sendMonthlyNotification = false
-
         val now = Calendar.getInstance()
 
         for (streak in streaks) {
@@ -34,14 +31,15 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     if (now.get(Calendar.DAY_OF_YEAR) != lastReset.get(Calendar.DAY_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
                         hasResetOccurred = true
                     } else if (!streak.isCompleted && now.get(Calendar.HOUR_OF_DAY) >= 20) {
-                        sendDailyNotification = true
+                        // Envia notificação individual de fim de dia!
+                        sendIndividualNotification(streak, "O dia está a acabar! Não percas a tua streak diária!")
                     }
                 }
                 "S" -> {
                     if (now.get(Calendar.WEEK_OF_YEAR) != lastReset.get(Calendar.WEEK_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
                         hasResetOccurred = true
                     } else if (!streak.isCompleted && now.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-                        sendWeeklyNotification = true
+                        sendIndividualNotification(streak, "A semana termina hoje! Conclui a tua tarefa!")
                     }
                 }
                 "M" -> {
@@ -50,7 +48,7 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     } else {
                         val lastDayOfMonth = now.getActualMaximum(Calendar.DAY_OF_MONTH)
                         if (!streak.isCompleted && (lastDayOfMonth - now.get(Calendar.DAY_OF_MONTH)) <= 5) {
-                            sendMonthlyNotification = true
+                            sendIndividualNotification(streak, "O mês está a terminar! Não deixes a streak cair!")
                         }
                     }
                 }
@@ -58,31 +56,21 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
             if (hasResetOccurred) {
                 val newCount = if (streak.isCompleted) streak.count else 0
-
                 var newHistory = streak.history
                 var newCurrentStartDate = streak.currentStartDate
 
-                // SE FALHOU E A STREAK QUEBROU: Grava no histórico!
                 if (!streak.isCompleted && streak.count > 0 && streak.currentStartDate != null) {
-                    val record = StreakRecord(
-                        count = streak.count,
-                        startDate = streak.currentStartDate!!,
-                        endDate = System.currentTimeMillis()
-                    )
+                    val record = StreakRecord(streak.count, streak.currentStartDate!!, System.currentTimeMillis())
                     newHistory = newHistory + record
-                    newCurrentStartDate = null // Reinicia a data porque quebrou
-
-                    logDao.insertLog(AppLog(type = "STREAK_QUEBRADA", message = "A atividade '${streak.name}' quebrou a sequência de ${streak.count}!"))
+                    newCurrentStartDate = null
+                    logDao.insertLog(AppLog(type = "STREAK_QUEBRADA", message = "A atividade '${streak.name}' quebrou!"))
                 } else if (!streak.isCompleted) {
                     newCurrentStartDate = null
                 }
 
                 updatedStreaks.add(streak.copy(
-                    count = newCount,
-                    isCompleted = false,
-                    lastResetDate = System.currentTimeMillis(),
-                    history = newHistory,
-                    currentStartDate = newCurrentStartDate
+                    count = newCount, isCompleted = false, lastResetDate = System.currentTimeMillis(),
+                    history = newHistory, currentStartDate = newCurrentStartDate
                 ))
                 needsUpdate = true
             }
@@ -91,25 +79,30 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         if (needsUpdate && updatedStreaks.isNotEmpty()) {
             dao.updateAll(updatedStreaks)
         }
-
-        if (sendDailyNotification) sendNotification("Atividades Diárias", "Faltam menos de 4 horas! Não percas a tua streak!", 1)
-        if (sendWeeklyNotification) sendNotification("Atividades Semanais", "A semana está a terminar. Já fizeste as tarefas?", 2)
-        if (sendMonthlyNotification) sendNotification("Atividades Mensais", "O mês está no fim. Mantém as tuas streaks vivas!", 3)
-
         return Result.success()
     }
 
-    private fun sendNotification(title: String, message: String, notificationId: Int) {
+    private fun sendIndividualNotification(streak: Streak, message: String) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "streak_notifications"
-        val channel = NotificationChannel(channelId, "Streaks", NotificationManager.IMPORTANCE_HIGH)
+        val channelId = "end_of_period_notifications"
+        val channel = NotificationChannel(channelId, "Avisos de Fim de Prazo", NotificationManager.IMPORTANCE_HIGH)
         notificationManager.createNotificationChannel(channel)
+
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext, streak.id + 1000, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle(title)
+            .setContentTitle("⏳ ${streak.name}")
             .setContentText(message)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
             .build()
-        notificationManager.notify(notificationId, notification)
+        notificationManager.notify(streak.id + 1000, notification)
     }
 }
