@@ -26,4 +26,7 @@ interface TaskDao {
     // Tarefas concluídas
     @Query("SELECT * FROM tasks_table WHERE isCompleted = 1 ORDER BY completionDate DESC")
     fun getCompletedTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks_table")
+    suspend fun getAllTasksSync(): List<Task>
 }

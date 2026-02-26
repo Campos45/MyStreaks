@@ -13,4 +13,7 @@ interface AppLogDao {
     // Caso no futuro queiras criar um ecrã para ler os logs, já temos a query pronta!
     @Query("SELECT * FROM logs_table ORDER BY timestamp DESC")
     fun getAllLogs(): Flow<List<AppLog>>
+
+    @Query("SELECT * FROM logs_table")
+    suspend fun getAllLogsSync(): List<AppLog>
 }

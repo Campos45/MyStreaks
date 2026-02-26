@@ -37,4 +37,7 @@ interface StreakDao {
     // Adiciona esta linha no teu StreakDao
     @Query("SELECT * FROM streaks_table WHERE id = :id")
     suspend fun getStreakById(id: Int): Streak?
+
+    @Query("SELECT * FROM streaks_table")
+    suspend fun getAllStreaksSync(): List<Streak>
 }
