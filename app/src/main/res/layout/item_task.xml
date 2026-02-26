@@ -33,6 +33,20 @@
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"/>
 
+            <TextView
+                android:id="@+id/tvTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛒 Compras"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/surface"
+                android:backgroundTint="@color/text_secondary"
+                android:background="@drawable/widget_background"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:visibility="gone"/>
+
             <ImageView
                 android:id="@+id/ivEdit"
                 android:layout_width="wrap_content"

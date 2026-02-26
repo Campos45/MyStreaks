@@ -32,6 +32,14 @@ class TaskAdapter(
         fun bind(task: Task) {
             binding.tvTaskName.text = task.name
 
+            // --- NOVO: Mostrar a Etiqueta (Tag) ---
+            if (!task.tag.isNullOrBlank()) {
+                binding.tvTag.visibility = View.VISIBLE
+                binding.tvTag.text = task.tag
+            } else {
+                binding.tvTag.visibility = View.GONE
+            }
+
             binding.cbTaskCompleted.setOnCheckedChangeListener(null)
             binding.cbTaskCompleted.isChecked = task.isCompleted
 

@@ -29,4 +29,8 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks_table")
     suspend fun getAllTasksSync(): List<Task>
+
+    // NOVO: Puxar todas as tags únicas das tarefas
+    @Query("SELECT DISTINCT tag FROM tasks_table WHERE tag IS NOT NULL AND tag != ''")
+    suspend fun getAllTagsSync(): List<String>
 }

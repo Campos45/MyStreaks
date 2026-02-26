@@ -17,5 +17,9 @@ data class Task(
     val name: String,
     var isCompleted: Boolean = false,
     var completionDate: Long? = null, // Regista o dia em que foi concluída
-    var subTasks: List<SubTask> = emptyList() // A lista de sub-passos
+    var subTasks: List<SubTask> = emptyList(), // A lista de sub-passos
+
+    // NOVO:
+    var tag: String? = null,
+    var orderIndex: Int = 0
 )

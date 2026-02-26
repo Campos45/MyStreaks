@@ -7,7 +7,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 
-data class Medal(val name: String, val description: String, val emoji: String, val isUnlocked: Boolean)
+// 1. Adicionámos a variável 'source' à classe Medalha
+data class Medal(val name: String, val description: String, val emoji: String, val isUnlocked: Boolean, val source: String? = null)
 
 class MedalAdapter(private val medals: List<Medal>) : RecyclerView.Adapter<MedalAdapter.MedalViewHolder>() {
 
@@ -16,6 +17,7 @@ class MedalAdapter(private val medals: List<Medal>) : RecyclerView.Adapter<Medal
         val tvEmoji: TextView = view.findViewById(R.id.tvEmoji)
         val tvMedalName: TextView = view.findViewById(R.id.tvMedalName)
         val tvMedalDesc: TextView = view.findViewById(R.id.tvMedalDesc)
+        val tvMedalSource: TextView = view.findViewById(R.id.tvMedalSource) // 2. Ligar o novo texto
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MedalViewHolder {
@@ -31,12 +33,21 @@ class MedalAdapter(private val medals: List<Medal>) : RecyclerView.Adapter<Medal
 
         if (medal.isUnlocked) {
             holder.cardMedal.alpha = 1.0f
-            holder.cardMedal.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF8E1")) // Dourado claro
+            holder.cardMedal.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF8E1"))
+
+            // 3. Se estiver desbloqueado e tiver origem, mostra a origem!
+            if (medal.source != null) {
+                holder.tvMedalSource.visibility = View.VISIBLE
+                holder.tvMedalSource.text = "Alcançado com:\n${medal.source}"
+            } else {
+                holder.tvMedalSource.visibility = View.GONE
+            }
+
         } else {
-            // Medalha Bloqueada (Cinzento e transparente)
             holder.cardMedal.alpha = 0.4f
             holder.cardMedal.setCardBackgroundColor(android.graphics.Color.WHITE)
             holder.tvEmoji.text = "🔒"
+            holder.tvMedalSource.visibility = View.GONE
         }
     }
 

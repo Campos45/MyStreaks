@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -25,6 +26,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pt.ipt.mystreaks.databinding.ActivityMainBinding
 import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -71,12 +76,11 @@ class MainActivity : AppCompatActivity() {
                     newStartDate = null
                 }
 
-                // NOVO: Regista o dia exato no calendário (Normalizado para a meia-noite para não haver erros de horas)
-                val cal = java.util.Calendar.getInstance()
-                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                cal.set(java.util.Calendar.MINUTE, 0)
-                cal.set(java.util.Calendar.SECOND, 0)
-                cal.set(java.util.Calendar.MILLISECOND, 0)
+                val cal = Calendar.getInstance()
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
+                cal.set(Calendar.MILLISECOND, 0)
                 val todayMidnight = cal.timeInMillis
 
                 val updatedDates = streak.completedDates.toMutableList()
@@ -88,7 +92,7 @@ class MainActivity : AppCompatActivity() {
 
                 val updatedStreak = streak.copy(
                     count = newCount, isCompleted = isChecked,
-                    currentStartDate = newStartDate, completedDates = updatedDates // Guarda as datas!
+                    currentStartDate = newStartDate, completedDates = updatedDates
                 )
                 viewModel.update(updatedStreak)
 
@@ -96,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                 logViewModel.registrarAcao("STREAK", "$acao a atividade '${streak.name}' (Fogo: $newCount)")
             },
             onHistoryClicked = { streak -> showStreakHistoryDialog(streak) },
-            onEditClicked = { streak -> showAddStreakDialog(streak) } // NOVO
+            onEditClicked = { streak -> showAddStreakDialog(streak) }
         )
 
         binding.recyclerViewStreaks.adapter = adapter
@@ -159,6 +163,27 @@ class MainActivity : AppCompatActivity() {
         }
         ItemTouchHelper(swipeAndDragCallback).attachToRecyclerView(binding.recyclerViewStreaks)
 
+        binding.ivFilter.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val tags = database.streakDao().getAllTagsSync()
+                withContext(Dispatchers.Main) {
+                    if (tags.isEmpty()) {
+                        Toast.makeText(this@MainActivity, "Ainda não tens categorias criadas.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    val options = arrayOf("🌟 Todas") + tags.toTypedArray()
+
+                    MaterialAlertDialogBuilder(this@MainActivity)
+                        .setTitle("Filtrar por Categoria")
+                        .setItems(options) { _, which ->
+                            currentTagFilter = if (which == 0) null else options[which]
+                            refreshUI()
+                        }
+                        .show()
+                }
+            }
+        }
+
         viewModel.activeStreaks.observe(this) { streaks ->
             activeList = streaks ?: emptyList()
             if (!isShowingArchive) refreshUI()
@@ -177,35 +202,12 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, TasksActivity::class.java))
         }
         binding.tvNavMedals.setOnClickListener {
-            startActivity(android.content.Intent(this, MedalsActivity::class.java))
+            startActivity(Intent(this, MedalsActivity::class.java))
         }
         binding.fabLogs.setOnClickListener {
             startActivity(Intent(this, LogsActivity::class.java))
         }
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
-
-        // --- NOVO: LÓGICA DO FILTRO ---
-        binding.ivFilter.setOnClickListener {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val tags = database.streakDao().getAllTagsSync()
-                withContext(Dispatchers.Main) {
-                    if (tags.isEmpty()) {
-                        Toast.makeText(this@MainActivity, "Ainda não tens categorias criadas.", Toast.LENGTH_SHORT).show()
-                        return@withContext
-                    }
-                    // Adiciona a opção de ver todas as streaks no topo da lista
-                    val options = arrayOf("🌟 Todas") + tags.toTypedArray()
-
-                    MaterialAlertDialogBuilder(this@MainActivity)
-                        .setTitle("Filtrar por Categoria")
-                        .setItems(options) { _, which ->
-                            currentTagFilter = if (which == 0) null else options[which]
-                            refreshUI() // Atualiza o ecrã com o novo filtro
-                        }
-                        .show()
-                }
-            }
-        }
 
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<StreakWorker>(15, java.util.concurrent.TimeUnit.MINUTES).build()
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork("StreakCheck", androidx.work.ExistingPeriodicWorkPolicy.KEEP, workRequest)
@@ -217,28 +219,25 @@ class MainActivity : AppCompatActivity() {
         val rvCalendar = dialogView.findViewById<RecyclerView>(R.id.rvCalendar)
         val tvRecordsList = dialogView.findViewById<android.widget.TextView>(R.id.tvRecordsList)
 
-        val calendar = java.util.Calendar.getInstance()
-        val currentMonth = calendar.get(java.util.Calendar.MONTH)
-        val currentYear = calendar.get(java.util.Calendar.YEAR)
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
 
         val monthNames = arrayOf("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
         tvMonthName.text = "${monthNames[currentMonth]} $currentYear"
 
-        // Constrói a lista de dias do calendário
-        calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
-        val firstDayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1 // 0=Dom, 1=Seg...
-        val daysInMonth = calendar.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1
+        val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
         val daysList = mutableListOf<CalendarDay>()
 
-        // Espaços vazios antes do dia 1 (para o mês começar no dia da semana correto)
         for (i in 0 until firstDayOfWeek) { daysList.add(CalendarDay("", false, false)) }
 
-        // Dias reais do mês
         for (i in 1..daysInMonth) {
-            val checkCal = java.util.Calendar.getInstance()
+            val checkCal = Calendar.getInstance()
             checkCal.set(currentYear, currentMonth, i, 0, 0, 0)
-            checkCal.set(java.util.Calendar.MILLISECOND, 0)
+            checkCal.set(Calendar.MILLISECOND, 0)
 
             val isCompleted = streak.completedDates.contains(checkCal.timeInMillis)
             daysList.add(CalendarDay(i.toString(), isCompleted, true))
@@ -247,16 +246,15 @@ class MainActivity : AppCompatActivity() {
         rvCalendar.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 7)
         rvCalendar.adapter = CalendarAdapter(daysList)
 
-        // Preenche o histórico de Recordes em texto que já tínhamos
         val sortedHistory = streak.history.sortedByDescending { it.count }
         if (sortedHistory.isEmpty()) {
             tvRecordsList.text = "Ainda não tens recordes guardados."
         } else {
-            val sdf = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+            val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
             val sb = java.lang.StringBuilder()
             sortedHistory.take(5).forEachIndexed { index, record ->
-                val start = sdf.format(java.util.Date(record.startDate))
-                val end = sdf.format(java.util.Date(record.endDate))
+                val start = sdf.format(Date(record.startDate))
+                val end = sdf.format(Date(record.endDate))
                 sb.append("${index + 1}º -> 🔥 ${record.count} dias | $start a $end\n")
             }
             tvRecordsList.text = sb.toString()
@@ -271,12 +269,12 @@ class MainActivity : AppCompatActivity() {
     private fun refreshUI() {
         val baseList = if (isShowingArchive) archivedList else activeList
 
-        // Aplica o filtro se existir um selecionado
         val currentList = if (currentTagFilter != null) {
             baseList.filter { it.tag == currentTagFilter }
         } else {
             baseList
         }
+
         adapter.submitList(currentList)
 
         if (currentList.isEmpty()) {
@@ -298,11 +296,11 @@ class MainActivity : AppCompatActivity() {
 
         if (isShowingArchive) {
             binding.fabAddStreak.hide()
-            binding.tvAppTitle.text = "🗄️" // Fica apenas o emoji do arquivo
+            binding.tvAppTitle.text = "🗄️"
             binding.tvToggleArchive.text = "⬅️ Voltar"
         } else {
             binding.fabAddStreak.show()
-            binding.tvAppTitle.text = "🔥" // Fica apenas o emoji do fogo
+            binding.tvAppTitle.text = "🔥"
             binding.tvToggleArchive.text = "📁 Arquivo"
         }
 
@@ -319,38 +317,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddStreakDialog(streakToEdit: Streak? = null) {
-        val dialogBinding = DialogAddStreakBinding.inflate(LayoutInflater.from(this))
+        val dialogBinding = DialogAddStreakBinding.inflate(layoutInflater)
         val isEditing = streakToEdit != null
 
         var selectedHour: Int? = streakToEdit?.remindHour
         var selectedMinute: Int? = streakToEdit?.remindMinute
 
-        // --- PREENCHE OS CAMPOS SE ESTIVERMOS A EDITAR ---
-        if (isEditing) {
-            dialogBinding.etActivityName.setText(streakToEdit!!.name)
-            dialogBinding.etTag.setText(streakToEdit.tag ?: "")
-
-            when (streakToEdit.type) {
-                "D" -> dialogBinding.rgFrequency.check(R.id.rbDaily)
-                "S" -> dialogBinding.rgFrequency.check(R.id.rbWeekly)
-                "M" -> dialogBinding.rgFrequency.check(R.id.rbMonthly)
-            }
-
-            if (selectedHour != null && selectedMinute != null) {
-                dialogBinding.switchReminder.isChecked = true
-                dialogBinding.layoutReminderDetails.visibility = View.VISIBLE
-                dialogBinding.btnTimePicker.text = String.format("Hora: %02d:%02d", selectedHour, selectedMinute)
-                if (streakToEdit.type != "D" && streakToEdit.remindExtra != null) {
-                    dialogBinding.etExtraDay.setText(streakToEdit.remindExtra.toString())
-                }
-            }
-        }
-
-        // Carregar Tags para as Sugestões Dropdown
         lifecycleScope.launch(Dispatchers.IO) {
             val existingTags = database.streakDao().getAllTagsSync()
             withContext(Dispatchers.Main) {
-                val arrayAdapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, existingTags)
+                val arrayAdapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, existingTags)
                 dialogBinding.etTag.setAdapter(arrayAdapter)
             }
         }
@@ -370,12 +346,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialogBinding.btnTimePicker.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
+            val calendar = Calendar.getInstance()
             android.app.TimePickerDialog(this, { _, hourOfDay, minute ->
                 selectedHour = hourOfDay
                 selectedMinute = minute
                 dialogBinding.btnTimePicker.text = String.format("Hora: %02d:%02d", hourOfDay, minute)
-            }, calendar.get(java.util.Calendar.HOUR_OF_DAY), calendar.get(java.util.Calendar.MINUTE), true).show()
+            }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
+        }
+
+        if (isEditing) {
+            dialogBinding.etActivityName.setText(streakToEdit!!.name)
+            dialogBinding.etTag.setText(streakToEdit.tag ?: "")
+
+            when (streakToEdit.type) {
+                "D" -> dialogBinding.rgFrequency.check(R.id.rbDaily)
+                "S" -> dialogBinding.rgFrequency.check(R.id.rbWeekly)
+                "M" -> dialogBinding.rgFrequency.check(R.id.rbMonthly)
+            }
+
+            if (selectedHour != null && selectedMinute != null) {
+                dialogBinding.switchReminder.isChecked = true
+                dialogBinding.btnTimePicker.text = String.format("Hora: %02d:%02d", selectedHour, selectedMinute)
+                if (streakToEdit.type != "D" && streakToEdit.remindExtra != null) {
+                    dialogBinding.etExtraDay.setText(streakToEdit.remindExtra.toString())
+                }
+            }
         }
 
         MaterialAlertDialogBuilder(this)
@@ -404,29 +399,25 @@ class MainActivity : AppCompatActivity() {
                     val tagName = dialogBinding.etTag.text.toString().trim()
                     val finalTag = if (tagName.isNotEmpty()) tagName else null
 
-                    // SE FOR EDIÇÃO, ATUALIZA. SE FOR NOVA, INSERE.
                     if (isEditing) {
                         val updatedStreak = streakToEdit!!.copy(
                             name = activityName, type = type,
-                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay,
-                            tag = finalTag
+                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay, tag = finalTag
                         )
                         viewModel.update(updatedStreak)
                         logViewModel.registrarAcao("STREAK_EDIT", "Editou a atividade '$activityName'")
                     } else {
                         val newStreak = Streak(
                             name = activityName, type = type,
-                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay,
-                            tag = finalTag
+                            remindHour = selectedHour, remindMinute = selectedMinute, remindExtra = finalExtraDay, tag = finalTag
                         )
                         viewModel.insert(newStreak)
                         logViewModel.registrarAcao("STREAK_NOVA", "Criou a atividade '$activityName' ($type)")
                     }
 
-                    // Agenda o alarme se foi ativado
                     if (selectedHour != null && selectedMinute != null) {
                         lifecycleScope.launch(Dispatchers.IO) {
-                            kotlinx.coroutines.delay(500)
+                            delay(500)
                             val streaks = database.streakDao().getActiveStreaksList()
                             val insertedStreak = streaks.find { it.name == activityName && it.remindHour == selectedHour }
                             if (insertedStreak != null) {
@@ -436,7 +427,6 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
-
                 } else {
                     Toast.makeText(this, "O nome não pode estar vazio", Toast.LENGTH_SHORT).show()
                 }
@@ -445,6 +435,7 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
             .show()
     }
+
     private fun scheduleStreakAlarm(streak: Streak) {
         if (streak.remindHour == null || streak.remindMinute == null) return
 
@@ -456,24 +447,24 @@ class MainActivity : AppCompatActivity() {
             this, streak.id, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
 
-        val calendar = java.util.Calendar.getInstance()
-        calendar.set(java.util.Calendar.HOUR_OF_DAY, streak.remindHour!!)
-        calendar.set(java.util.Calendar.MINUTE, streak.remindMinute!!)
-        calendar.set(java.util.Calendar.SECOND, 0)
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, streak.remindHour!!)
+        calendar.set(Calendar.MINUTE, streak.remindMinute!!)
+        calendar.set(Calendar.SECOND, 0)
 
         when (streak.type) {
             "D" -> {
-                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
             "S" -> {
-                val targetDay = streak.remindExtra ?: java.util.Calendar.MONDAY
-                calendar.set(java.util.Calendar.DAY_OF_WEEK, targetDay)
-                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                val targetDay = streak.remindExtra ?: Calendar.MONDAY
+                calendar.set(Calendar.DAY_OF_WEEK, targetDay)
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(Calendar.WEEK_OF_YEAR, 1)
             }
             "M" -> {
                 val targetDay = streak.remindExtra ?: 1
-                calendar.set(java.util.Calendar.DAY_OF_MONTH, targetDay)
-                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(java.util.Calendar.MONTH, 1)
+                calendar.set(Calendar.DAY_OF_MONTH, targetDay)
+                if (calendar.timeInMillis <= System.currentTimeMillis()) calendar.add(Calendar.MONTH, 1)
             }
         }
 
