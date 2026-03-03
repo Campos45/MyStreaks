@@ -24,5 +24,7 @@ data class Streak(
     var tag: String? = null,
 
     // NOVO: Guarda a lista de dias em que a tarefa foi feita
-    var completedDates: List<Long> = emptyList()
+    var completedDates: List<Long> = emptyList(),
+
+    var notifyDays: List<Int> = emptyList() // Guarda os dias da semana ou mês (ex: [1, 15, 30])
 )

@@ -35,4 +35,17 @@ class Converters {
         val listType = object : com.google.gson.reflect.TypeToken<List<Long>>() {}.type
         return com.google.gson.Gson().fromJson(value, listType) ?: emptyList()
     }
+
+
+    // NOVO: Ensina o Room a lidar com a List<Int> dos notifyDays
+    @androidx.room.TypeConverter
+    fun fromIntList(value: List<Int>?): String {
+        return com.google.gson.Gson().toJson(value)
+    }
+
+    @androidx.room.TypeConverter
+    fun toIntList(value: String): List<Int> {
+        val listType = object : com.google.gson.reflect.TypeToken<List<Int>>() {}.type
+        return com.google.gson.Gson().fromJson(value, listType) ?: emptyList()
+    }
 }

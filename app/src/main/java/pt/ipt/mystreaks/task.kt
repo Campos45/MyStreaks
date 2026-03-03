@@ -21,5 +21,10 @@ data class Task(
 
     // NOVO:
     var tag: String? = null,
-    var orderIndex: Int = 0
+    var orderIndex: Int = 0,
+
+    var notes: String? = null,
+    var dueDate: Long? = null,
+
+    var isArchived: Boolean = false
 )

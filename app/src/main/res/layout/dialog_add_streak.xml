@@ -1,121 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Nova Atividade"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginBottom="16dp"/>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etActivityName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Nome da atividade (ex: Beber Água)"
-            android:inputType="textCapSentences"/>
-
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
-
-        <AutoCompleteTextView
-            android:id="@+id/etTag"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Categoria (Opcional - Ex: 🏋️ Saúde)"
-            android:inputType="textCapSentences"/>
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Frequência:"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
-
-    <RadioGroup
-        android:id="@+id/rgFrequency"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        android:layout_marginBottom="16dp">
-
-        <RadioButton
-            android:id="@+id/rbDaily"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Diária"
-            android:checked="true"/>
-
-        <RadioButton
-            android:id="@+id/rbWeekly"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Semanal"/>
-
-        <RadioButton
-            android:id="@+id/rbMonthly"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Mensal"/>
-    </RadioGroup>
-
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/switchReminder"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Notificação Personalizada ⏰"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+    android:layout_height="wrap_content">
 
     <LinearLayout
-        android:id="@+id/layoutReminderDetails"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp">
+        android:padding="24dp">
 
-        <Button
-            android:id="@+id/btnTimePicker"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        <TextView
+            android:id="@+id/tvDialogTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Escolher Hora (ex: 10:00)"/>
+            android:text="Nova Atividade"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:layout_marginBottom="16dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutExtraDay"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:visibility="gone">
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etExtraDay"
+                android:id="@+id/etActivityName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:hint="Dia (ex: 1=Dom... 7=Sáb ou 1 a 31)"/>
+                android:hint="Nome da atividade (ex: Beber Água)"
+                android:inputType="textCapSentences"/>
         </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
 
-</LinearLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <AutoCompleteTextView
+                android:id="@+id/etTag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Categoria (Opcional - Ex: 🏋️ Saúde)"
+                android:inputType="textCapSentences"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Frequência:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgFrequency"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="16dp">
+
+            <RadioButton
+                android:id="@+id/rbDaily"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Diária"
+                android:checked="true"/>
+
+            <RadioButton
+                android:id="@+id/rbWeekly"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Semanal"/>
+
+            <RadioButton
+                android:id="@+id/rbMonthly"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mensal"/>
+        </RadioGroup>
+
+        <LinearLayout
+            android:id="@+id/layoutSpecificDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvDaysHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Que dias da semana devem contar?"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginBottom="8dp"/>
+
+            <GridLayout
+                android:id="@+id/gridWeekly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="7"
+                android:visibility="gone"/>
+
+            <GridLayout
+                android:id="@+id/gridMonthly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="7"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notificação Personalizada ⏰"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutReminderDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btnTimePicker"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Escolher Hora (ex: 10:00)"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

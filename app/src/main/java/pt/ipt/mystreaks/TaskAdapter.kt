@@ -40,6 +40,23 @@ class TaskAdapter(
                 binding.tvTag.visibility = View.GONE
             }
 
+            // --- Mostrar Data Limite (Prazo) ---
+            if (task.dueDate != null && !task.isCompleted) {
+                binding.tvDueDate.visibility = View.VISIBLE
+                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+
+                // Fica vermelho e diz "Atrasado" se o prazo já passou
+                if (System.currentTimeMillis() > task.dueDate!!) {
+                    binding.tvDueDate.setTextColor(android.graphics.Color.RED)
+                    binding.tvDueDate.text = "⚠️ Atrasado: ${sdf.format(java.util.Date(task.dueDate!!))}"
+                } else {
+                    binding.tvDueDate.setTextColor(android.graphics.Color.parseColor("#E65100")) // Cor Laranja
+                    binding.tvDueDate.text = "⏳ Prazo: ${sdf.format(java.util.Date(task.dueDate!!))}"
+                }
+            } else {
+                binding.tvDueDate.visibility = View.GONE
+            }
+
             binding.cbTaskCompleted.setOnCheckedChangeListener(null)
             binding.cbTaskCompleted.isChecked = task.isCompleted
 

@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class StreakAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -20,9 +21,17 @@ class StreakAlarmReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             val streak = database.streakDao().getStreakById(streakId)
 
-            // Só notifica se não tiver sido concluída nem arquivada!
-            if (streak != null && !streak.isCompleted && !streak.isArchived) {
-                sendNotification(context, streak)
+            if (streak != null && !streak.isArchived) {
+                // Verifica se foi concluída HOJE (Meia-noite de hoje)
+                val todayCal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }
+                val isCompletedToday = streak.completedDates.contains(todayCal.timeInMillis)
+
+                // Só notifica se NÃO tiver sido concluída hoje!
+                if (!isCompletedToday) {
+                    sendNotification(context, streak)
+                }
             }
         }
     }
@@ -51,6 +60,8 @@ class StreakAlarmReceiver : BroadcastReceiver() {
             .setAutoCancel(true) // Desaparece quando clicas
             .build()
 
-        notificationManager.notify(streak.id, notification) // ID único, garante que cada notificação é independente
+        // ID único (streak.id + número aleatório) para receberes as notificações às 19h e 23h sem as antigas desaparecerem
+        val uniqueId = streak.id * 100 + (System.currentTimeMillis() % 100).toInt()
+        notificationManager.notify(uniqueId, notification)
     }
 }

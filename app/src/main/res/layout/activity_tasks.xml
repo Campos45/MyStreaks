@@ -27,21 +27,12 @@
                 android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/btnBack"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⬅️"
-                    android:textSize="20sp"
-                    android:paddingEnd="12dp"
-                    android:background="?attr/selectableItemBackground"/>
-
-                <TextView
                     android:id="@+id/tvAppTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Tarefas 📝"
-                    android:textSize="26sp"
+                    android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"/>
 
@@ -49,11 +40,20 @@
                     android:id="@+id/tvToggleCompleted"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="✅ Concluídas"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:text="✅"
+                    android:textSize="18sp"
                     android:padding="8dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackground"/>
+
+                <TextView
+                    android:id="@+id/tvToggleArchive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📁"
+                    android:textSize="18sp"
+                    android:padding="8dp"
+                    android:layout_marginEnd="8dp"
                     android:background="?attr/selectableItemBackground"/>
 
                 <ImageView
@@ -64,8 +64,32 @@
                     android:padding="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     app:tint="@color/primary"/>
+
+                <ImageView
+                    android:id="@+id/ivSearch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@color/primary"/>
+
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Pesquisar tarefa..."
+            android:padding="12dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/widget_background"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="8dp"
+            android:visibility="gone" />
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -130,10 +154,10 @@
         android:id="@+id/lottieConfetti"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:lottie_rawRes="@raw/confetti"
+        android:elevation="10dp"
+        android:visibility="gone"
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
-        android:elevation="10dp"
-        android:visibility="gone" />
+        app:lottie_rawRes="@raw/confetti" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
