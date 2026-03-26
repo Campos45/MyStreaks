@@ -1,11 +1,6 @@
 package pt.ipt.mystreaks
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import java.util.Calendar
@@ -18,91 +13,106 @@ class StreakWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val logDao = database.appLogDao()
 
         val streaks = dao.getActiveStreaksList()
-        var needsUpdate = false
         val updatedStreaks = mutableListOf<Streak>()
         val now = Calendar.getInstance()
 
+        // Calcular a meia-noite de hoje para saber se a checkbox deve estar marcada
+        val todayMidnight = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
         for (streak in streaks) {
-            val lastReset = Calendar.getInstance().apply { timeInMillis = streak.lastResetDate }
-            var hasResetOccurred = false
+            val lastCheckCal = Calendar.getInstance().apply { timeInMillis = streak.lastResetDate }
+            var streakBroken = false
+            var newLastResetDate = streak.lastResetDate
 
             when (streak.type) {
-                "D" -> {
-                    if (now.get(Calendar.DAY_OF_YEAR) != lastReset.get(Calendar.DAY_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
-                        hasResetOccurred = true
-                    } else if (!streak.isCompleted && now.get(Calendar.HOUR_OF_DAY) >= 20) {
-                        // Envia notificação individual de fim de dia!
-                        sendIndividualNotification(streak, "O dia está a acabar! Não percas a tua streak diária!")
-                    }
-                }
-                "S" -> {
-                    if (now.get(Calendar.WEEK_OF_YEAR) != lastReset.get(Calendar.WEEK_OF_YEAR) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
-                        hasResetOccurred = true
-                    } else if (!streak.isCompleted && now.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-                        sendIndividualNotification(streak, "A semana termina hoje! Conclui a tua tarefa!")
-                    }
-                }
-                "M" -> {
-                    if (now.get(Calendar.MONTH) != lastReset.get(Calendar.MONTH) || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
-                        hasResetOccurred = true
-                    } else {
-                        val lastDayOfMonth = now.getActualMaximum(Calendar.DAY_OF_MONTH)
-                        if (!streak.isCompleted && (lastDayOfMonth - now.get(Calendar.DAY_OF_MONTH)) <= 5) {
-                            sendIndividualNotification(streak, "O mês está a terminar! Não deixes a streak cair!")
+                "D" -> { // DIÁRIA
+                    // Se mudámos de dia desde a última verificação
+                    if (now.get(Calendar.DAY_OF_YEAR) != lastCheckCal.get(Calendar.DAY_OF_YEAR) || now.get(Calendar.YEAR) != lastCheckCal.get(Calendar.YEAR)) {
+                        // Verifica se foi feita ONTEM
+                        val yesterday = Calendar.getInstance().apply {
+                            add(Calendar.DAY_OF_YEAR, -1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+
+                        if (!streak.completedDates.contains(yesterday)) {
+                            streakBroken = true
                         }
+                        newLastResetDate = System.currentTimeMillis()
+                    }
+                }
+                "S" -> { // SEMANAL
+                    // Se mudámos de semana desde a última verificação
+                    if (now.get(Calendar.WEEK_OF_YEAR) != lastCheckCal.get(Calendar.WEEK_OF_YEAR) || now.get(Calendar.YEAR) != lastCheckCal.get(Calendar.YEAR)) {
+                        // Verifica se foi feita na SEMANA PASSADA
+                        val lastWeek = Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -1) }
+                        val wasDoneLastWeek = streak.completedDates.any { date ->
+                            val c = Calendar.getInstance().apply { timeInMillis = date }
+                            c.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR) && c.get(Calendar.YEAR) == lastWeek.get(Calendar.YEAR)
+                        }
+
+                        if (!wasDoneLastWeek) {
+                            streakBroken = true
+                        }
+                        newLastResetDate = System.currentTimeMillis()
+                    }
+                }
+                "M" -> { // MENSAL
+                    // Se mudámos de mês desde a última verificação
+                    if (now.get(Calendar.MONTH) != lastCheckCal.get(Calendar.MONTH) || now.get(Calendar.YEAR) != lastCheckCal.get(Calendar.YEAR)) {
+                        // Verifica se foi feita no MÊS PASSADO
+                        val lastMonth = Calendar.getInstance().apply { add(Calendar.MONTH, -1) }
+                        val wasDoneLastMonth = streak.completedDates.any { date ->
+                            val c = Calendar.getInstance().apply { timeInMillis = date }
+                            c.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH) && c.get(Calendar.YEAR) == lastMonth.get(Calendar.YEAR)
+                        }
+
+                        if (!wasDoneLastMonth) {
+                            streakBroken = true
+                        }
+                        newLastResetDate = System.currentTimeMillis()
                     }
                 }
             }
 
-            if (hasResetOccurred) {
-                val newCount = if (streak.isCompleted) streak.count else 0
-                var newHistory = streak.history
-                var newCurrentStartDate = streak.currentStartDate
+            // O estado REAL da checkbox (só está true se tiver sido feita HOJE)
+            val isActuallyCompletedToday = streak.completedDates.contains(todayMidnight)
 
-                if (!streak.isCompleted && streak.count > 0 && streak.currentStartDate != null) {
+            // Aplicar o castigo se a streak quebrou e ainda tínhamos pontos
+            var newCount = streak.count
+            var newHistory = streak.history
+            var newCurrentStartDate = streak.currentStartDate
+
+            if (streakBroken && streak.count > 0) {
+                newCount = 0 // Fogo a zero!
+                if (streak.currentStartDate != null) {
                     val record = StreakRecord(streak.count, streak.currentStartDate!!, System.currentTimeMillis())
-                    newHistory = newHistory + record
-                    newCurrentStartDate = null
-                    logDao.insertLog(AppLog(type = "STREAK_QUEBRADA", message = "A atividade '${streak.name}' quebrou!"))
-                } else if (!streak.isCompleted) {
-                    newCurrentStartDate = null
+                    newHistory = newHistory + record // Guarda o recorde para o histórico
                 }
+                newCurrentStartDate = null
+                logDao.insertLog(AppLog(type = "STREAK_QUEBRADA", message = "A atividade '${streak.name}' quebrou!"))
+            } else if (streakBroken) {
+                newCurrentStartDate = null // Garante que não inicia uma contagem fantasma
+            }
 
-                updatedStreaks.add(streak.copy(
-                    count = newCount, isCompleted = false, lastResetDate = System.currentTimeMillis(),
-                    history = newHistory, currentStartDate = newCurrentStartDate
-                ))
-                needsUpdate = true
+            // Se houve QUALQUER alteração (seja no fogo, na checkbox ou na data de verificação), atualiza na Base de Dados
+            if (streak.count != newCount || streak.isCompleted != isActuallyCompletedToday || streak.lastResetDate != newLastResetDate) {
+                updatedStreaks.add(
+                    streak.copy(
+                        count = newCount,
+                        isCompleted = isActuallyCompletedToday,
+                        lastResetDate = newLastResetDate,
+                        history = newHistory,
+                        currentStartDate = newCurrentStartDate
+                    )
+                )
             }
         }
 
-        if (needsUpdate && updatedStreaks.isNotEmpty()) {
+        if (updatedStreaks.isNotEmpty()) {
             dao.updateAll(updatedStreaks)
         }
+
         return Result.success()
-    }
-
-    private fun sendIndividualNotification(streak: Streak, message: String) {
-        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "end_of_period_notifications"
-        val channel = NotificationChannel(channelId, "Avisos de Fim de Prazo", NotificationManager.IMPORTANCE_HIGH)
-        notificationManager.createNotificationChannel(channel)
-
-        val intent = Intent(applicationContext, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext, streak.id + 1000, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("⏳ ${streak.name}")
-            .setContentText(message)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-        notificationManager.notify(streak.id + 1000, notification)
     }
 }

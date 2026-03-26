@@ -7,4 +7,5 @@
     <color name="badge_monthly">#F0FFF4</color>
     <color name="badge_monthly_text">#2F855A</color>
     <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
 </resources>

@@ -22,7 +22,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
@@ -33,28 +33,8 @@
                     android:layout_weight="1"
                     android:text="Tarefas 📝"
                     android:textSize="24sp"
-                    android:textStyle="bold"
                     android:textColor="@color/text_primary"/>
 
-                <TextView
-                    android:id="@+id/tvToggleCompleted"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✅"
-                    android:textSize="18sp"
-                    android:padding="8dp"
-                    android:layout_marginEnd="4dp"
-                    android:background="?attr/selectableItemBackground"/>
-
-                <TextView
-                    android:id="@+id/tvToggleArchive"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📁"
-                    android:textSize="18sp"
-                    android:padding="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="?attr/selectableItemBackground"/>
 
                 <ImageView
                     android:id="@+id/ivFilter"
@@ -76,6 +56,52 @@
 
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroupTasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedButton="@+id/btnPendingTasks">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPendingTasks"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                android:textSize="12sp"
+                android:text="Por Realizar" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCompletedTasks"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                android:textSize="12sp"
+                android:text="Concluídas" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnArchivedTasks"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                android:textSize="12sp"
+                android:text="Arquivadas" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <EditText
             android:id="@+id/etSearch"

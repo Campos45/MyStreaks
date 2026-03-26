@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_streaks"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="Streaks" />
+    <item
+        android:id="@+id/nav_tasks"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Tarefas" />
+    <item
+        android:id="@+id/nav_lists"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="Listas" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Definições" />
+</menu>

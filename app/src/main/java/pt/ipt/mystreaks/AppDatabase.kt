@@ -8,33 +8,24 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Streak::class, Task::class, AppLog::class], version = 13, exportSchema = false)
+// 1. Adicionámos a Tag::class à lista de entidades e mudámos a versão para 2!
+@Database(entities = [Task::class, AppLog::class, Streak::class, Tag::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun streakDao(): StreakDao
     abstract fun taskDao(): TaskDao
     abstract fun appLogDao(): AppLogDao
+    abstract fun streakDao(): StreakDao
+    abstract fun tagDao(): TagDao // 2. Adicionámos o novo DAO
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // NOVO: A Regra para não perder dados! (Ajusta os números 11 e 12 conforme as tuas versões)
-        val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Adiciona Notas e Prazos às Tarefas
-                database.execSQL("ALTER TABLE tasks_table ADD COLUMN notes TEXT")
-                database.execSQL("ALTER TABLE tasks_table ADD COLUMN dueDate INTEGER")
-
-                // Adiciona Dias Específicos às Streaks (como é uma lista, o TypeConverter guarda como texto JSON vazio '[]')
-                database.execSQL("ALTER TABLE streaks_table ADD COLUMN notifyDays TEXT NOT NULL DEFAULT '[]'")
-            }
-        }
-
-        val MIGRATION_12_13 = object : Migration(12, 13) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE tasks_table ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
+        // 3. Ensinamos o Android a atualizar a base de dados da Versão 1 para a Versão 2 sem apagar os teus dados!
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `tags_table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` TEXT NOT NULL)")
             }
         }
 
@@ -45,9 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mystreaks_database"
                 )
-                    .addMigrations(MIGRATION_11_12) // <- ADICIONA ISTO AQUI!
-                    .addMigrations(MIGRATION_11_12, MIGRATION_12_13)
-                    // .fallbackToDestructiveMigration() <- Podes deixar isto se já lá estava, o addMigrations tem prioridade.
+                    .addMigrations(MIGRATION_1_2) // Adicionamos a migração aqui
                     .build()
                 INSTANCE = instance
                 instance
