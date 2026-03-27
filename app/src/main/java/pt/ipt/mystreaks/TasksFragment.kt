@@ -3,21 +3,16 @@ package pt.ipt.mystreaks
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import pt.ipt.mystreaks.databinding.DialogAddTaskBinding
 import pt.ipt.mystreaks.databinding.FragmentTasksBinding
 import java.util.Calendar
@@ -32,19 +27,28 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
     private val viewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
     private val logRepository by lazy { LogRepository(database.appLogDao()) }
     private val logViewModel: LogViewModel by viewModels { LogViewModelFactory(logRepository) }
+    private val tagViewModel: TagViewModel by viewModels()
 
     private var isShowingCompleted = false
     private var isShowingArchive = false
     private var pendingList = emptyList<Task>()
     private var completedList = emptyList<Task>()
     private lateinit var adapter: TaskAdapter
-    private var currentTagFilter: String? = null
+
+    // NOVO: Controlo de Filtros
+    private var currentTagFilter: String = "ALL" // "ALL", "NONE" ou "NomeDaTag"
+    private var currentPriorityFilter: Int? = null // 1 a 5, ou null para mostrar todas
     private var currentSearchQuery: String = ""
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentTasksBinding.bind(view)
 
+        // --- CORREÇÃO DA COR DA BARRA DE PESQUISA (Forçar Preto) ---
+        binding.etSearch.setTextColor(android.graphics.Color.BLACK)
+        binding.etSearch.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        // --- APENAS UM ADAPTADOR ---
         adapter = TaskAdapter(
             onTaskUpdate = { updatedTask ->
                 viewModel.update(updatedTask)
@@ -54,83 +58,77 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
                 logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
             },
-            onEditClicked = { task -> showAddTaskDialog(task) }
+            onEditClicked = { task -> showAddTaskDialog(task) },
+            // As ações do deslizar SwipeLayout
+            onArchiveClicked = { task ->
+                if (!isShowingArchive) {
+                    viewModel.update(task.copy(isArchived = true))
+                    logViewModel.registrarAcao("TAREFA", "Arquivou a tarefa '${task.name}'")
+                    Snackbar.make(binding.root, "Tarefa arquivada 📁", Snackbar.LENGTH_LONG)
+                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = false)) }.show()
+                } else {
+                    viewModel.update(task.copy(isArchived = false))
+                    logViewModel.registrarAcao("TAREFA", "Restaurou a tarefa '${task.name}'")
+                    Snackbar.make(binding.root, "Tarefa restaurada 📝", Snackbar.LENGTH_LONG)
+                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = true)) }.show()
+                }
+            },
+            onDeleteClicked = { task ->
+                viewModel.delete(task)
+                logViewModel.registrarAcao("TAREFA", "Eliminou '${task.name}'")
+                Snackbar.make(binding.root, "Tarefa eliminada 🗑️", Snackbar.LENGTH_LONG)
+                    .setAction("DESFAZER") { viewModel.insert(task) }.show()
+            }
         )
 
         binding.recyclerViewTasks.adapter = adapter
         binding.recyclerViewTasks.layoutManager = LinearLayoutManager(requireContext())
 
-        val swipeAndDragCallback = object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
-        ) {
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-                if (isShowingCompleted || isShowingArchive) return false
-                val fromPosition = viewHolder.adapterPosition
-                val toPosition = target.adapterPosition
-                val currentList = adapter.currentList.toMutableList()
-                java.util.Collections.swap(currentList, fromPosition, toPosition)
-                adapter.notifyItemMoved(fromPosition, toPosition)
-                return true
-            }
-
-            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
-                super.clearView(recyclerView, viewHolder)
-                val currentList = adapter.currentList
-                currentList.forEachIndexed { index, task ->
-                    if (task.orderIndex != index) {
-                        viewModel.update(task.copy(orderIndex = index))
-                    }
-                }
-            }
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
-                val task = adapter.currentList[position]
-
-                if (!isShowingArchive) {
-                    viewModel.update(task.copy(isArchived = true))
-                    logViewModel.registrarAcao("TAREFA", "Arquivou a tarefa '${task.name}'")
-                    Snackbar.make(binding.root, "Tarefa arquivada 📁", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = false)) }
-                        .show()
-                } else {
-                    if (direction == ItemTouchHelper.RIGHT) {
-                        viewModel.update(task.copy(isArchived = false))
-                        logViewModel.registrarAcao("TAREFA", "Restaurou a tarefa '${task.name}'")
-                        Snackbar.make(binding.root, "Tarefa restaurada 📝", Snackbar.LENGTH_LONG)
-                            .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = true)) }
-                            .show()
-                    } else {
-                        viewModel.delete(task)
-                        logViewModel.registrarAcao("TAREFA", "Eliminou definitivamente '${task.name}'")
-                        Snackbar.make(binding.root, "Tarefa eliminada 🗑️", Snackbar.LENGTH_LONG)
-                            .setAction("DESFAZER") { viewModel.insert(task) }
-                            .show()
-                    }
-                }
-            }
+        tagViewModel.allTags.observe(viewLifecycleOwner) { allTags ->
+            val taskTags = allTags.filter { it.type == "T" }
+            adapter.setTags(taskTags)
         }
-        ItemTouchHelper(swipeAndDragCallback).attachToRecyclerView(binding.recyclerViewTasks)
 
+        // --- O SUPER MENU DE FILTROS (Categoria & Prioridade) ---
         binding.ivFilter.setOnClickListener {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val tags = database.taskDao().getAllTagsSync()
-                withContext(Dispatchers.Main) {
-                    if (tags.isEmpty()) {
-                        Toast.makeText(requireContext(), "Ainda não tens categorias nas tarefas.", Toast.LENGTH_SHORT).show()
-                        return@withContext
-                    }
-                    val options = arrayOf("🌟 Todas") + tags.toTypedArray()
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("Filtrar por Categoria")
-                        .setItems(options) { _, which ->
-                            currentTagFilter = if (which == 0) null else options[which]
-                            refreshUI()
+            val filterTypes = arrayOf("🏷️ Filtrar por Categoria", "⭐ Filtrar por Prioridade", "❌ Limpar Todos os Filtros")
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Filtros")
+                .setItems(filterTypes) { _, which ->
+                    when (which) {
+                        0 -> { // Por Categoria
+                            val taskTags = tagViewModel.allTags.value?.filter { it.type == "T" } ?: emptyList()
+                            val options = arrayOf("🌟 Todas as Categorias", "🚫 Sem Categoria") + taskTags.map { it.name }.toTypedArray()
+
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle("Escolher Categoria")
+                                .setItems(options) { _, tagIndex ->
+                                    currentTagFilter = when (tagIndex) {
+                                        0 -> "ALL"
+                                        1 -> "NONE"
+                                        else -> options[tagIndex]
+                                    }
+                                    refreshUI()
+                                }.show()
                         }
-                        .show()
-                }
-            }
+                        1 -> { // Por Prioridade
+                            val prioOptions = arrayOf("⭐ 1 (Muito Baixa)", "⭐⭐ 2 (Baixa)", "⭐⭐⭐ 3 (Média)", "⭐⭐⭐⭐ 4 (Alta)", "⭐⭐⭐⭐⭐ 5 (Urgente)")
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle("Escolher Prioridade")
+                                .setItems(prioOptions) { _, prioIndex ->
+                                    currentPriorityFilter = prioIndex + 1
+                                    refreshUI()
+                                }.show()
+                        }
+                        2 -> { // Limpar Filtros
+                            currentTagFilter = "ALL"
+                            currentPriorityFilter = null
+                            refreshUI()
+                            Toast.makeText(requireContext(), "Filtros limpos!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }.show()
         }
 
         binding.ivSearch.setOnClickListener {
@@ -179,9 +177,20 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             pendingList.filter { !it.isArchived }
         }
 
-        val currentList = baseList.filter {
-            (currentTagFilter == null || it.tag == currentTagFilter) &&
-                    (currentSearchQuery.isEmpty() || it.name.contains(currentSearchQuery, ignoreCase = true))
+        // --- LÓGICA DE FILTRAGEM TRIPLA ---
+        val currentList = baseList.filter { task ->
+            // Filtro 1: Categoria (Tag)
+            val matchesTag = when (currentTagFilter) {
+                "ALL" -> true
+                "NONE" -> task.tag.isNullOrBlank()
+                else -> task.tag == currentTagFilter
+            }
+            // Filtro 2: Prioridade
+            val matchesPriority = currentPriorityFilter == null || task.priority == currentPriorityFilter
+            // Filtro 3: Pesquisa de Texto
+            val matchesSearch = currentSearchQuery.isEmpty() || task.name.contains(currentSearchQuery, ignoreCase = true)
+
+            matchesTag && matchesPriority && matchesSearch
         }
 
         adapter.submitList(currentList)
@@ -199,15 +208,13 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 binding.tvEmptyDesc.text = "As tuas vitórias vão aparecer aqui."
             } else {
                 binding.tvEmptyEmoji.text = "📋"
-                binding.tvEmptyTitle.text = "Nenhuma Tarefa"
-                binding.tvEmptyDesc.text = "Clica em 'Nova' para adicionares uma tarefa!"
+                binding.tvEmptyTitle.text = "Nenhum Resultado"
+                binding.tvEmptyDesc.text = "Não encontrámos tarefas com estes filtros."
             }
         } else {
             binding.recyclerViewTasks.visibility = View.VISIBLE
             binding.layoutEmptyState.visibility = View.GONE
         }
-
-        if (isShowingArchive || isShowingCompleted) binding.fabAddTask.hide() else binding.fabAddTask.show()
     }
 
     private fun showAddTaskDialog(taskToEdit: Task? = null) {
@@ -215,23 +222,29 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         val isEditing = taskToEdit != null
         var selectedDueDate: Long? = taskToEdit?.dueDate
 
+        val taskTags = tagViewModel.allTags.value?.filter { it.type == "T" } ?: emptyList()
+        val customAdapter = TagDropdownAdapter(requireContext(), taskTags)
+        dialogBinding.etTag.setAdapter(customAdapter)
+
+        dialogBinding.etTag.setOnClickListener { dialogBinding.etTag.showDropDown() }
+        dialogBinding.etTag.setOnItemClickListener { parent, _, position, _ ->
+            val selectedTag = parent.getItemAtPosition(position) as Tag
+            dialogBinding.etTag.setText(selectedTag.name, false)
+        }
+
         if (isEditing) {
             dialogBinding.tvDialogTitle.text = "Editar Tarefa"
             dialogBinding.etTaskName.setText(taskToEdit?.name)
-            dialogBinding.etTag.setText(taskToEdit?.tag ?: "")
+            dialogBinding.etTag.setText(taskToEdit?.tag ?: "", false)
             dialogBinding.etTaskNotes.setText(taskToEdit?.notes ?: "")
+            dialogBinding.ratingPriority.rating = taskToEdit?.priority?.toFloat() ?: 3.0f
+
             if (selectedDueDate != null) {
                 val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
                 dialogBinding.btnDatePicker.text = "Prazo: ${sdf.format(java.util.Date(selectedDueDate!!))}"
             }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val existingTags = database.taskDao().getAllTagsSync()
-            withContext(Dispatchers.Main) {
-                val arrayAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, existingTags)
-                dialogBinding.etTag.setAdapter(arrayAdapter)
-            }
+        } else {
+            dialogBinding.ratingPriority.rating = 3.0f
         }
 
         dialogBinding.btnDatePicker.setOnClickListener {
@@ -288,6 +301,15 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 val taskName = dialogBinding.etTaskName.text.toString()
                 val tagName = dialogBinding.etTag.text.toString().trim()
                 val finalTag = if (tagName.isNotEmpty()) tagName else null
+                val priorityValue = dialogBinding.ratingPriority.rating.toInt()
+
+                if (finalTag != null) {
+                    val exists = tagViewModel.allTags.value?.any { it.name.trim().equals(finalTag, true) && it.type == "T" } ?: false
+                    if (!exists) {
+                        tagViewModel.insert(Tag(name = finalTag, color = "#757575", type = "T"))
+                    }
+                }
+
                 val notesName = dialogBinding.etTaskNotes.text.toString().trim()
                 val finalNotes = if (notesName.isNotEmpty()) notesName else null
 
@@ -304,11 +326,11 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                     }
 
                     if (isEditing) {
-                        viewModel.update(taskToEdit!!.copy(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate))
+                        viewModel.update(taskToEdit!!.copy(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate, priority = priorityValue))
                         logViewModel.registrarAcao("TAREFA_EDIT", "Editou a tarefa '$taskName'")
                         scheduleTaskAlarm(taskName, selectedDueDate)
                     } else {
-                        viewModel.insert(Task(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate))
+                        viewModel.insert(Task(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate, priority = priorityValue))
                         logViewModel.registrarAcao("TAREFA_NOVA", "Criou a tarefa '$taskName'")
                         scheduleTaskAlarm(taskName, selectedDueDate)
                     }
@@ -344,10 +366,17 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         val pendingIntent = android.app.PendingIntent.getBroadcast(
             requireContext(), requestCode, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
+
         if (dueDate > System.currentTimeMillis()) {
             try {
-                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
+                // A MÁGICA PARA CORTAR O DOZE MODE DO ANDROID:
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
+                } else {
+                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
+                }
             } catch (e: SecurityException) {
+                // Caso o utilizador não tenha dado permissão (Android 14+), faz um fallback seguro
                 alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
             }
         }

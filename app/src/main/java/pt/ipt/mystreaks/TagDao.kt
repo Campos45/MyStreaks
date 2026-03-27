@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TagDao {
+    @Query("SELECT * FROM tags")
+    fun getAllTagsSyncList(): List<Tag>
+
     // Mudámos de tags_table para tags
     @Query("SELECT * FROM tags ORDER BY name ASC")
     fun getAllTags(): Flow<List<Tag>>

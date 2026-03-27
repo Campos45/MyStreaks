@@ -44,4 +44,6 @@ interface StreakDao {
     // NOVO: Puxar todas as tags únicas que existem
     @Query("SELECT DISTINCT tag FROM streaks_table WHERE tag IS NOT NULL AND tag != ''")
     suspend fun getAllTagsSync(): List<String>
+
+
 }

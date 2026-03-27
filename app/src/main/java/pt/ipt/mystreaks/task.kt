@@ -19,7 +19,9 @@ data class Task(
     var completionDate: Long? = null, // Regista o dia em que foi concluída
     var subTasks: List<SubTask> = emptyList(), // A lista de sub-passos
 
-    // NOVO:
+
+    var priority: Int = 3,
+
     var tag: String? = null,
     var orderIndex: Int = 0,
 

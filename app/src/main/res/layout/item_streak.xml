@@ -14,46 +14,43 @@
     android:clipChildren="false"
     android:clipToPadding="false">
 
-    <FrameLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/botoes_escondidos"
-        android:layout_width="128dp"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:clipChildren="false"
-        android:clipToPadding="false">
+        android:layout_gravity="end"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp">
 
-        <FrameLayout
-            android:layout_width="80dp"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="end"
-            android:background="@drawable/bg_swipe_delete">
-
-            <ImageView
-                android:id="@+id/btnDelete"
-                android:layout_width="64dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="end"
-                android:src="@android:drawable/ic_menu_delete"
-                android:padding="16dp"
-                app:tint="@android:color/white"/>
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="80dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:translationX="-16dp"
-            android:background="@drawable/bg_swipe_archive">
+            android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/btnArchive"
-                android:layout_width="64dp"
+                android:layout_width="75dp"
                 android:layout_height="match_parent"
-                android:layout_gravity="end"
+                android:background="#FFC107"
                 android:src="@android:drawable/ic_menu_save"
-                android:padding="16dp"
+                android:scaleType="center"
+                android:clickable="true"
+                android:focusable="true"
                 app:tint="@android:color/white"/>
-        </FrameLayout>
-    </FrameLayout>
+
+            <ImageView
+                android:id="@+id/btnDelete"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:background="#F44336"
+                android:src="@android:drawable/ic_menu_delete"
+                android:scaleType="center"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="@android:color/white"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/meu_cartao_principal"

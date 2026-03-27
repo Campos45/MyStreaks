@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppLogDao {
+    @Query("DELETE FROM logs_table")
+    suspend fun deleteAll()
     @Insert
     suspend fun insertLog(log: AppLog)
 

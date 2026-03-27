@@ -15,6 +15,8 @@ class LogViewModel(private val repository: LogRepository) : ViewModel() {
     fun registrarAcao(type: String, message: String) = viewModelScope.launch {
         repository.insertLog(AppLog(type = type, message = message))
     }
+
+    fun deleteAll() = viewModelScope.launch { repository.deleteAll() }
 }
 
 class LogViewModelFactory(private val repository: LogRepository) : ViewModelProvider.Factory {

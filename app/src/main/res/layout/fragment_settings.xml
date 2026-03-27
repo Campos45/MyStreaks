@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@color/background">
+    android:background="?attr/colorSurface"
+    android:padding="24dp">
 
     <TextView
         android:layout_width="match_parent"
@@ -13,56 +13,81 @@
         android:text="Definições ⚙️"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginBottom="32dp"/>
 
-    <com.google.android.material.button.MaterialButton
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnMedals"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:text="Os Meus Troféus"
-        android:textSize="16sp"
-        app:icon="@android:drawable/btn_star_big_on"
-        app:iconSize="24dp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/btn_star_big_on" app:tint="?attr/colorPrimary"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Os Meus Troféus" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-
-    <com.google.android.material.button.MaterialButton
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnLogs"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:text="Registo do Sistema (Logs)"
-        android:textSize="16sp"
-        app:icon="@android:drawable/ic_menu_info_details"
-        app:iconSize="24dp"/>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnManageTagsStreaks"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🔥 Categorias de Streaks"
-        android:gravity="start|center_vertical"
-        app:icon="@android:drawable/ic_menu_myplaces"/>
+        android:layout_marginBottom="12dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_info_details" app:tint="?attr/colorPrimary"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Registo do Sistema" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnManageTagsTasks"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnExportData"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📝 Categorias de Tarefas"
-        android:gravity="start|center_vertical"
-        app:icon="@android:drawable/ic_menu_edit"/>
+        android:layout_marginBottom="32dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_save" app:tint="?attr/colorPrimary"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Backup e Restauro (JSON)" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnManageTagsLists"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📋 Categorias de Listas"
-        android:gravity="start|center_vertical"
-        app:icon="@android:drawable/ic_menu_agenda"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Gestão de Categorias" android:textSize="14sp" android:textStyle="bold" android:textColor="#757575" android:layout_marginBottom="12dp"/>
+
+    <com.google.android.material.card.MaterialCardView android:id="@+id/btnManageTagsStreaks" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:clickable="true" android:focusable="true" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔥" android:textSize="20sp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Categorias de Streaks" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView android:id="@+id/btnManageTagsTasks" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:clickable="true" android:focusable="true" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📝" android:textSize="20sp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Categorias de Tarefas" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView android:id="@+id/btnManageTagsLists" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:clickable="true" android:focusable="true" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📋" android:textSize="20sp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Categorias de Listas" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

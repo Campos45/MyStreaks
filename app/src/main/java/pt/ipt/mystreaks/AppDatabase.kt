@@ -9,7 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 // 1. Adicionámos a Tag::class à lista de entidades e mudámos a versão para 2!
-@Database(entities = [Task::class, AppLog::class, Streak::class, Tag::class], version = 2, exportSchema = false)
+@Database(entities = [Task::class, AppLog::class, Streak::class, Tag::class, MyList::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -17,6 +17,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appLogDao(): AppLogDao
     abstract fun streakDao(): StreakDao
     abstract fun tagDao(): TagDao // 2. Adicionámos o novo DAO
+
+    abstract fun myListDao(): MyListDao
 
     companion object {
         @Volatile

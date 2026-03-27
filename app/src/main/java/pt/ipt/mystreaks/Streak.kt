@@ -23,6 +23,8 @@ data class Streak(
     var remindExtra: Int? = null,
     var tag: String? = null,
 
+    var lastIncrementDate: Long = 0L,
+
     // NOVO: Guarda a lista de dias em que a tarefa foi feita
     var completedDates: List<Long> = emptyList(),
 

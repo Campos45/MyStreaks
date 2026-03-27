@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nome da Lista"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etListName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Categoria"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <AutoCompleteTextView
+            android:id="@+id/etTag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/btnFormat"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_sort_alphabetically"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tooltipText="Formatar Texto" />
+
+        <ImageButton
+            android:id="@+id/btnBgColor"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tooltipText="Cor de Fundo da Nota" />
+
+
+
+        <ImageButton
+            android:id="@+id/btnPin"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:src="@android:drawable/btn_star_big_off"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tooltipText="Fixar no Topo" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnArchiveList"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_save"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:visibility="gone"
+            app:tint="#757575"/>
+
+        <ImageButton
+            android:id="@+id/btnDeleteList"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:visibility="gone"
+            app:tint="#F44336"/>
+
+
+        <ImageButton
+            android:id="@+id/btnUndo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+        <ImageButton
+            android:id="@+id/btnRedo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_media_next"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:id="@+id/formatToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:visibility="gone"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#F5F5F5"
+            android:padding="8dp"
+            android:gravity="center_vertical">
+
+            <Button android:id="@+id/btnTitle1" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="T1" android:textSize="18sp" android:textStyle="bold" android:layout_marginEnd="4dp"/>
+            <Button android:id="@+id/btnTitle2" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="T2" android:textSize="16sp" android:textStyle="bold" android:layout_marginEnd="8dp"/>
+            <Button android:id="@+id/btnNormalText" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="Normal" android:layout_marginEnd="8dp"/>
+
+
+            <View android:layout_width="1dp" android:layout_height="24dp" android:background="#CCC" android:layout_marginHorizontal="8dp"/>
+
+            <ImageButton android:id="@+id/btnBold" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_edit" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Negrito" android:layout_marginEnd="4dp"/>
+            <ImageButton android:id="@+id/btnItalic" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_info_details" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Itálico" android:layout_marginEnd="4dp"/>
+
+            <Button android:id="@+id/btnUnderline" android:layout_width="40dp" android:layout_height="40dp" style="?attr/materialButtonOutlinedStyle" android:text="U" android:textStyle="bold" android:textSize="16sp" android:padding="0dp"/>
+
+            <View android:layout_width="1dp" android:layout_height="24dp" android:background="#CCC" android:layout_marginHorizontal="8dp"/>
+
+            <ImageButton android:id="@+id/btnTextColor" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_edit" android:tint="@android:color/black" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Cor do Texto" android:layout_marginEnd="8dp"/>
+
+            <ImageButton android:id="@+id/btnClearFormat" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_close_clear_cancel" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Voltar ao Texto Normal" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:hint="Escreve a tua nota..."
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etListContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="top|start"
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="16dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

@@ -1,10 +1,29 @@
 package pt.ipt.mystreaks
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import pt.ipt.mystreaks.databinding.FragmentSettingsBinding
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+
+// Mudei o nome para evitar conflitos com classes velhas que tenhas no projeto
+data class MyFullBackup(
+    val streaks: List<Streak>? = null,
+    val tasks: List<Task>? = null,
+    val lists: List<MyList>? = null,
+    val tags: List<Tag>? = null
+)
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -12,180 +31,138 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val binding get() = _binding!!
 
     private lateinit var tagViewModel: TagViewModel
+    private val database by lazy { AppDatabase.getDatabase(requireContext()) }
+    private val gson = Gson()
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val streaks = database.streakDao().getAllStreaksSync()
+                    val tasks = database.taskDao().getAllTasksSync()
+                    val lists = database.myListDao().getAllListsSync()
+                    val tags = database.tagDao().getAllTagsSyncList()
 
-        _binding = FragmentSettingsBinding.bind(view)
-        tagViewModel = androidx.lifecycle.ViewModelProvider(this)[TagViewModel::class.java]
+                    val backup = MyFullBackup(streaks, tasks, lists, tags)
+                    val json = gson.toJson(backup)
 
-        // --- AGORA TEMOS 3 BOTÕES PARA 3 TIPOS DE TAGS ---
-
-        binding.btnManageTagsStreaks.setOnClickListener {
-            showManageTagsDialog("S") // S de Streaks
-        }
-
-        binding.btnManageTagsTasks.setOnClickListener {
-            showManageTagsDialog("T") // T de Tarefas
-        }
-
-        binding.btnManageTagsLists.setOnClickListener {
-            showManageTagsDialog("L") // L de Listas
-        }
-
-        binding.btnMedals.setOnClickListener {
-            startActivity(Intent(requireContext(), MedalsActivity::class.java))
-        }
-
-        binding.btnLogs.setOnClickListener {
-            startActivity(Intent(requireContext(), LogsActivity::class.java))
+                    requireContext().contentResolver.openOutputStream(it)?.use { os ->
+                        OutputStreamWriter(os).use { writer -> writer.write(json) }
+                    }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Backup exportado! 📤", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
-    // A função agora recebe o "type" como parâmetro
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val json = InputStreamReader(requireContext().contentResolver.openInputStream(it)).readText()
+                    val backup = gson.fromJson(json, MyFullBackup::class.java)
+
+                    backup.tags?.forEach { tag ->
+                        if (tag.type.isNullOrEmpty()) {
+                            database.tagDao().insert(tag.copy(id = 0, type = "S"))
+                            database.tagDao().insert(tag.copy(id = 0, type = "T"))
+                            database.tagDao().insert(tag.copy(id = 0, type = "L"))
+                        } else {
+                            database.tagDao().insert(tag)
+                        }
+                    }
+
+                    backup.tasks?.forEach { task ->
+                        val p = if (task.priority == 0) 3 else task.priority
+                        database.taskDao().insert(task.copy(priority = p))
+                    }
+
+                    backup.streaks?.forEach { database.streakDao().insert(it) }
+                    backup.lists?.forEach { database.myListDao().insert(it) }
+
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Importado com sucesso! 📥", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Erro ao importar", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        _binding = FragmentSettingsBinding.bind(view)
+        tagViewModel = androidx.lifecycle.ViewModelProvider(this)[TagViewModel::class.java]
+
+        binding.btnManageTagsStreaks.setOnClickListener { showManageTagsDialog("S") }
+        binding.btnManageTagsTasks.setOnClickListener { showManageTagsDialog("T") }
+        binding.btnManageTagsLists.setOnClickListener { showManageTagsDialog("L") }
+        binding.btnMedals.setOnClickListener { startActivity(Intent(requireContext(), MedalsActivity::class.java)) }
+        binding.btnLogs.setOnClickListener { startActivity(Intent(requireContext(), LogsActivity::class.java)) }
+
+        binding.btnExportData.setOnClickListener {
+            val options = arrayOf("📤 Exportar Backup", "📥 Importar Backup")
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Backup")
+                .setItems(options) { _, which ->
+                    if (which == 0) exportLauncher.launch("MyStreaks_Backup.json")
+                    else importLauncher.launch("application/json")
+                }.show()
+        }
+    }
+
     private fun showManageTagsDialog(type: String) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_manage_tags, null)
-
-        // Mudar o título do diálogo dinamicamente para o utilizador saber onde está
         val title = when(type) {
-            "S" -> "Categorias de Streaks 🏷️"
+            "S" -> "Categorias de Streaks 🔥"
             "T" -> "Categorias de Tarefas 📝"
             else -> "Categorias de Listas 📋"
         }
 
         val dialog = android.app.AlertDialog.Builder(requireContext())
-            .setTitle(title)
-            .setView(dialogView)
-            .create()
+            .setTitle(title).setView(dialogView).create()
 
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.show()
 
         var editingTag: Tag? = null
-        var selectedColorHex = "#448AFF"
-        var customColorHex = "#E0E0E0"
+        var selectedColor = "#448AFF"
+        val et = dialogView.findViewById<android.widget.EditText>(R.id.etNewTagName)
+        val btn = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSaveTag)
+        val rv = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvExistingTags)
 
-        val etNewTagName = dialogView.findViewById<android.widget.EditText>(R.id.etNewTagName)
-        val btnSaveTag = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSaveTag)
-
-        // ... (Cores e Hexágono - mantêm-se iguais ao teu código) ...
-        val colorCustom = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorCustom)
-        val colorPink = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorPink)
-        val colorPurple = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorPurple)
-        val colorBlue = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorBlue)
-        val colorGreen = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorGreen)
-        val colorOrange = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorOrange)
-
-        val staticColors = mapOf(
-            "#FF4081" to colorPink,
-            "#7C4DFF" to colorPurple,
-            "#448AFF" to colorBlue,
-            "#4CAF50" to colorGreen,
-            "#FFAB40" to colorOrange
+        rv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+        val tagAdapter = TagAdapter(
+            onDeleteClick = { tagViewModel.delete(it) },
+            onTagClick = { tag ->
+                editingTag = tag
+                et.setText(tag.name)
+                selectedColor = tag.color
+                btn.text = "Atualizar"
+            }
         )
+        rv.adapter = tagAdapter
 
-        fun updateColorSelection(selectedHex: String) {
-            if (selectedHex == customColorHex) {
-                colorCustom?.strokeWidth = 6
-                colorCustom?.strokeColor = android.graphics.Color.BLACK
-            } else {
-                colorCustom?.strokeWidth = 0
-            }
-            for ((hex, view) in staticColors) {
-                if (hex == selectedHex) {
-                    view?.strokeWidth = 6
-                    view?.strokeColor = android.graphics.Color.BLACK
-                } else {
-                    view?.strokeWidth = 0
-                }
-            }
-        }
-        updateColorSelection(selectedColorHex)
-
-        for ((hex, view) in staticColors) {
-            view?.setOnClickListener {
-                selectedColorHex = hex
-                updateColorSelection(hex)
-            }
+        tagViewModel.allTags.observe(viewLifecycleOwner) { tags ->
+            tagAdapter.submitList(tags.filter { it.type == type })
         }
 
-        colorCustom?.setOnClickListener {
-            val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
-            val hexagonPicker = pickerDialogView.findViewById<pt.ipt.mystreaks.HexagonColorPickerView>(R.id.hexagonPicker)
-            val cardColorPreview = pickerDialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardColorPreview)
-            val tvHex = pickerDialogView.findViewById<android.widget.TextView>(R.id.tvHexPreview)
-
-            try {
-                cardColorPreview.setCardBackgroundColor(android.graphics.Color.parseColor(customColorHex))
-                tvHex.text = customColorHex
-            } catch (e: Exception) {}
-
-            hexagonPicker.onColorChangeListener = { novaCorHex ->
-                tvHex.text = novaCorHex
-                try {
-                    cardColorPreview.setCardBackgroundColor(android.graphics.Color.parseColor(novaCorHex))
-                } catch (e: Exception) {}
-            }
-
-            android.app.AlertDialog.Builder(requireContext())
-                .setView(pickerDialogView)
-                .setPositiveButton("Confirmar Cor") { _, _ ->
-                    customColorHex = hexagonPicker.currentColorHex
-                    try {
-                        colorCustom.setCardBackgroundColor(android.graphics.Color.parseColor(customColorHex))
-                    } catch (e: Exception) {}
-                    selectedColorHex = customColorHex
-                    updateColorSelection(selectedColorHex)
-                }
-                .setNegativeButton("Cancelar", null)
-                .show()
-        }
-
-        // --- FILTRAR A LISTA PELO TIPO ESCOLHIDO ---
-        val rvTags = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvExistingTags)
-        if (rvTags != null) {
-            rvTags.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
-            val tagAdapter = TagAdapter(
-                onDeleteClick = { tag -> tagViewModel.delete(tag) },
-                onTagClick = { tag ->
-                    editingTag = tag
-                    etNewTagName?.setText(tag.name)
-                    selectedColorHex = tag.color
-                    if (!staticColors.containsKey(tag.color)) {
-                        customColorHex = tag.color
-                        colorCustom?.setCardBackgroundColor(android.graphics.Color.parseColor(customColorHex))
-                    }
-                    updateColorSelection(tag.color)
-                    btnSaveTag?.text = "Atualizar Tag"
-                }
-            )
-            rvTags.adapter = tagAdapter
-
-            // FILTRO: Só mostra as tags que pertencem a este menu (S, T ou L)
-            tagViewModel.allTags.observe(viewLifecycleOwner) { allTags ->
-                val filtered = allTags.filter { it.type == type }
-                tagAdapter.submitList(filtered)
-            }
-        }
-
-        btnSaveTag?.setOnClickListener {
-            val tagName = etNewTagName?.text.toString().trim()
-            if (tagName.isNotEmpty()) {
-                val newTag = Tag(
-                    id = editingTag?.id ?: 0,
-                    name = tagName,
-                    color = selectedColorHex,
-                    type = type // GUARDA COM O TIPO CORRETO!
-                )
-                tagViewModel.insert(newTag)
-
-                etNewTagName?.text?.clear()
+        btn.setOnClickListener {
+            val name = et.text.toString().trim()
+            if (name.isNotEmpty()) {
+                tagViewModel.insert(Tag(id = editingTag?.id ?: 0, name = name, color = selectedColor, type = type))
+                et.text.clear()
                 editingTag = null
-                btnSaveTag.text = "Guardar Tag"
-
-                android.widget.Toast.makeText(requireContext(), "Tag guardada! 🎉", android.widget.Toast.LENGTH_SHORT).show()
-            } else {
-                etNewTagName?.error = "Escreve um nome!"
+                btn.text = "Guardar"
             }
         }
     }

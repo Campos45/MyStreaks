@@ -1,7 +1,6 @@
 package pt.ipt.mystreaks
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -12,12 +11,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import pt.ipt.mystreaks.databinding.FragmentStreaksBinding
 import java.util.Calendar
 
@@ -31,7 +27,6 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
     private val viewModel: StreakViewModel by viewModels { StreakViewModelFactory(repository) }
     private val logRepository by lazy { LogRepository(database.appLogDao()) }
     private val logViewModel: LogViewModel by viewModels { LogViewModelFactory(logRepository) }
-
     private val tagViewModel: TagViewModel by viewModels()
 
     private var isShowingArchive = false
@@ -44,6 +39,12 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentStreaksBinding.bind(view)
+
+        // 1. O Título Correto e a Lupa no Topo
+        binding.tvAppTitle.text = "Streaks 🔥"
+        binding.ivSearch.setOnClickListener {
+            binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -58,88 +59,101 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                     Toast.makeText(requireContext(), "Restaura a atividade primeiro!", Toast.LENGTH_SHORT).show()
                     return@StreakAdapter
                 }
+
                 val cal = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
                 val todayMidnight = cal.timeInMillis
                 val updatedDates = streak.completedDates.toMutableList()
-                if (isChecked) { if (!updatedDates.contains(todayMidnight)) updatedDates.add(todayMidnight) }
-                else { updatedDates.remove(todayMidnight) }
-
                 var newCount = streak.count
-                if (isChecked) newCount++ else if (newCount > 0) newCount--
 
-                viewModel.update(streak.copy(count = newCount, isCompleted = isChecked, completedDates = updatedDates))
+                if (isChecked) {
+                    if (!updatedDates.contains(todayMidnight)) {
+                        val alreadyGotPointThisPeriod = updatedDates.any { pastDate ->
+                            val cPast = Calendar.getInstance().apply { timeInMillis = pastDate }
+                            val cNow = Calendar.getInstance()
+                            when (streak.type) {
+                                "D" -> false
+                                "S" -> cPast.get(Calendar.WEEK_OF_YEAR) == cNow.get(Calendar.WEEK_OF_YEAR) && cPast.get(Calendar.YEAR) == cNow.get(Calendar.YEAR)
+                                "M" -> cPast.get(Calendar.MONTH) == cNow.get(Calendar.MONTH) && cPast.get(Calendar.YEAR) == cNow.get(Calendar.YEAR)
+                                else -> false
+                            }
+                        }
+                        if (!alreadyGotPointThisPeriod) newCount++
+                        updatedDates.add(todayMidnight)
+                    }
+                } else {
+                    updatedDates.remove(todayMidnight)
+                    val hasOtherCompletionsThisPeriod = updatedDates.any { pastDate ->
+                        val cPast = Calendar.getInstance().apply { timeInMillis = pastDate }
+                        val cNow = Calendar.getInstance()
+                        when (streak.type) {
+                            "D" -> false
+                            "S" -> cPast.get(Calendar.WEEK_OF_YEAR) == cNow.get(Calendar.WEEK_OF_YEAR) && cPast.get(Calendar.YEAR) == cNow.get(Calendar.YEAR)
+                            "M" -> cPast.get(Calendar.MONTH) == cNow.get(Calendar.MONTH) && cPast.get(Calendar.YEAR) == cNow.get(Calendar.YEAR)
+                            else -> false
+                        }
+                    }
+                    if (!hasOtherCompletionsThisPeriod && newCount > 0) newCount--
+                }
+
+                viewModel.update(streak.copy(count = newCount, isCompleted = isChecked, completedDates = updatedDates, currentStartDate = if (newCount == 1 && streak.count == 0) System.currentTimeMillis() else streak.currentStartDate))
             },
-            onHistoryClicked = { streak -> showStreakHistoryDialog(streak) },
-            onEditClicked = { streak -> showAddStreakDialog(streak) },
-            onArchiveClicked = { streak ->
-                viewModel.update(streak.copy(isArchived = !isShowingArchive))
-            },
-            onDeleteClicked = { streak ->
-                viewModel.delete(streak)
-            }
+            onHistoryClicked = { showStreakHistoryDialog(it) },
+            onEditClicked = { showAddStreakDialog(it) },
+            onArchiveClicked = { viewModel.update(it.copy(isArchived = !isShowingArchive)) },
+            onDeleteClicked = { viewModel.delete(it) }
         )
 
         binding.recyclerViewStreaks.adapter = adapter
         binding.recyclerViewStreaks.layoutManager = LinearLayoutManager(requireContext())
 
         tagViewModel.allTags.observe(viewLifecycleOwner) { allTags ->
-            val streakTags = allTags.filter { it.type == "S" }
-            adapter.setTags(streakTags)
+            adapter.setTags(allTags.filter { it.type == "S" })
         }
 
-        viewModel.activeStreaks.observe(viewLifecycleOwner) { streaks ->
-            activeList = streaks ?: emptyList()
-            if (!isShowingArchive) refreshUI()
-        }
-
-        viewModel.archivedStreaks.observe(viewLifecycleOwner) { streaks ->
-            archivedList = streaks ?: emptyList()
-            if (isShowingArchive) refreshUI()
-        }
+        viewModel.activeStreaks.observe(viewLifecycleOwner) { activeList = it ?: emptyList(); if (!isShowingArchive) refreshUI() }
+        viewModel.archivedStreaks.observe(viewLifecycleOwner) { archivedList = it ?: emptyList(); if (isShowingArchive) refreshUI() }
 
         binding.toggleGroupStreaks.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                isShowingArchive = checkedId == R.id.btnArchivedStreaks
-                refreshUI()
-            }
+            if (isChecked) { isShowingArchive = checkedId == R.id.btnArchivedStreaks; refreshUI() }
         }
 
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
 
         binding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                currentSearchQuery = s.toString()
-                refreshUI()
-            }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { currentSearchQuery = s.toString(); refreshUI() }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
+        // Ligar a Lupa e Filtro nas Streaks
         binding.ivFilter.setOnClickListener {
-            val tagsS = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
-            val options = arrayOf("🌟 Todas") + tagsS.map { it.name }.toTypedArray()
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Filtrar Categoria")
-                .setItems(options) { _, which ->
-                    currentTagFilter = if (which == 0) null else options[which]
-                    refreshUI()
-                }.show()
-        }
-        tagViewModel.allTags.observe(viewLifecycleOwner) { allTags ->
-            val streakTags = allTags.filter { it.type == "S" }
-
-            // ISTO VAI APARECER NO TEU LOGCAT:
-            println("DEBUG_FRAGMENT: Recebi ${allTags.size} tags da BD. Destas, ${streakTags.size} são do tipo S.")
-
-            adapter.setTags(streakTags)
+            binding.ivFilter.setOnClickListener {
+                val tagsS = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
+                val options = arrayOf("🌟 Todas", "🚫 Sem Categoria") + tagsS.map { it.name }.toTypedArray()
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Filtrar Categoria")
+                    .setItems(options) { _, which ->
+                        currentTagFilter = when(which){
+                            0 -> null
+                            1 -> "NONE"
+                            else -> options[which]
+                        }
+                        refreshUI()
+                    }.show()
+            }
         }
     }
 
     private fun refreshUI() {
         val baseList = if (isShowingArchive) archivedList else activeList
         val filtered = baseList.filter {
-            (currentTagFilter == null || it.tag == currentTagFilter) &&
-                    (currentSearchQuery.isEmpty() || it.name.contains(currentSearchQuery, ignoreCase = true))
+            val matchesSearch = currentSearchQuery.isEmpty() || it.name.contains(currentSearchQuery, ignoreCase = true)
+            val matchesTag = when(currentTagFilter){
+                null -> true
+                "NONE" -> it.tag.isNullOrBlank()
+                else -> it.tag == currentTagFilter
+            }
+            matchesSearch && matchesTag
         }
         adapter.submitList(filtered)
         binding.layoutEmptyState.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
@@ -152,12 +166,34 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         val streakTags = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
         dialogBinding.etTag.setAdapter(TagDropdownAdapter(requireContext(), streakTags))
         dialogBinding.etTag.setOnClickListener { dialogBinding.etTag.showDropDown() }
+        dialogBinding.etTag.setOnItemClickListener { parent, _, position, _ -> dialogBinding.etTag.setText((parent.getItemAtPosition(position) as Tag).name, false) }
 
-        dialogBinding.etTag.setOnItemClickListener { parent, _, position, _ ->
-            val selectedTag = parent.getItemAtPosition(position) as Tag
-            // Outro "false" aqui para quando escolheres uma da lista, ele não a esconder a seguir
-            dialogBinding.etTag.setText(selectedTag.name, false)
+        // --- 2. O RELÓGIO DA NOTIFICAÇÃO NAS STREAKS ---
+        // --- 2. O RELÓGIO DA NOTIFICAÇÃO (Com o TEU Switch!) ---
+        var selectedHour = 9
+        var selectedMinute = 0
+
+        dialogBinding.switchReminder.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                // Quando ativa o switch, abre o relógio do Android
+                val timePicker = android.app.TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
+                    selectedHour = hourOfDay
+                    selectedMinute = minute
+                    buttonView.text = String.format("Aviso às %02d:%02d ⏰", hourOfDay, minute)
+                }, selectedHour, selectedMinute, true)
+
+                // Se a pessoa abrir o relógio mas clicar em cancelar ou fora, o switch volta a desligar
+                timePicker.setOnCancelListener {
+                    buttonView.isChecked = false
+                }
+
+                timePicker.show()
+            } else {
+                // Se o utilizador desligar o switch, volta ao texto original
+                buttonView.text = "Notificação Personalizada ⏰"
+            }
         }
+
         if (isEditing) {
             dialogBinding.etActivityName.setText(streakToEdit!!.name)
             dialogBinding.etTag.setText(streakToEdit.tag ?: "", false)
@@ -168,25 +204,17 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { _, _ ->
                 val name = dialogBinding.etActivityName.text.toString().trim()
-                val tagName = dialogBinding.etTag.text.toString().trim() // Limpa espaços aqui!
+                val tagName = dialogBinding.etTag.text.toString().trim()
                 val finalTag = if (tagName.isNotEmpty()) tagName else null
 
                 if (name.isNotBlank()) {
-                    // Criar a tag na BD se ela não existir (para garantir a cor cinzenta inicial)
                     if (finalTag != null) {
                         val exists = tagViewModel.allTags.value?.any { it.name.trim().equals(finalTag, true) } ?: false
-                        if (!exists) {
-                            tagViewModel.insert(Tag(name = finalTag, color = "#757575", type = "S"))
-                        }
+                        if (!exists) tagViewModel.insert(Tag(name = finalTag, color = "#757575", type = "S"))
                     }
 
                     if (isEditing) {
-                        // AQUI ESTAVA O ERRO: Temos de passar o finalTag no copy!
-                        val streakAtualizada = streakToEdit!!.copy(
-                            name = name,
-                            tag = finalTag
-                        )
-                        viewModel.update(streakAtualizada)
+                        viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag))
                         Toast.makeText(requireContext(), "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
                     } else {
                         viewModel.insert(Streak(name = name, tag = finalTag, type = "D"))
@@ -202,7 +230,6 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
 
         val cal = Calendar.getInstance()
         val monthNames = arrayOf("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
-
         tvMonthName.text = "${monthNames[cal.get(Calendar.MONTH)]} ${cal.get(Calendar.YEAR)}"
 
         val daysList = mutableListOf<CalendarDay>()
@@ -214,12 +241,8 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
 
         rvCalendar.layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 7)
         rvCalendar.adapter = CalendarAdapter(daysList)
-
         MaterialAlertDialogBuilder(requireContext()).setView(dialogView).setPositiveButton("Fechar", null).show()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
+    override fun onDestroyView() { super.onDestroyView(); _binding = null }
 }
