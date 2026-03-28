@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "pt.ipt.mystreaks"
         minSdk = 26
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -42,8 +42,7 @@ dependencies {
     // Dependências do Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    add("kapt", "androidx.room:room-compiler:2.6.1")
-
+    kapt("androidx.room:room-compiler:2.6.1")
     // ViewModels e LiveData
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
@@ -60,5 +59,4 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("com.github.zerobranch:SwipeLayout:1.3.1")
 
-    implementation("com.google.code.gson:gson:2.10.1")
 }

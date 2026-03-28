@@ -2,8 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -16,7 +17,7 @@
         android:theme="@style/Theme.MyStreaks"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,25 +25,25 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".TasksActivity" android:exported="false" />
-        <activity android:name=".LogsActivity" android:exported="false" />
+        <activity android:name=".ui.tasks.TasksActivity" android:exported="false" />
+        <activity android:name=".ui.logs.LogsActivity" android:exported="false" />
 
-        <activity android:name=".MedalsActivity" android:exported="false" />
+        <activity android:name=".ui.medals.MedalsActivity" android:exported="false" />
 
-        <receiver android:name=".StreakWidgetProvider" android:exported="true">
+        <receiver android:name=".widget.StreakWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_info" />
         </receiver>
 
-        <service android:name=".StreakWidgetService"
+        <service android:name=".widget.StreakWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 
-        <receiver android:name=".StreakAlarmReceiver" android:exported="false" />
+        <receiver android:name=".services.StreakAlarmReceiver" android:exported="false" />
 
-        <receiver android:name=".TaskAlarmReceiver" android:exported="false"/>
+        <receiver android:name=".services.TaskAlarmReceiver" android:exported="false"/>
     </application>
 
 </manifest>

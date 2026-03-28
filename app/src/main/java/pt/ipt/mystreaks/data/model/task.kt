@@ -1,0 +1,32 @@
+package pt.ipt.mystreaks.data.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+// Estrutura de um sub-passo
+data class SubTask(
+    val name: String,
+    var isCompleted: Boolean = false
+)
+
+// Estrutura da Tarefa Principal
+@Entity(tableName = "tasks_table")
+data class Task(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val name: String,
+    var isCompleted: Boolean = false,
+    var completionDate: Long? = null, // Regista o dia em que foi concluída
+    var subTasks: List<SubTask> = emptyList(), // A lista de sub-passos
+
+
+    var priority: Int = 3,
+
+    var tag: String? = null,
+    var orderIndex: Int = 0,
+
+    var notes: String? = null,
+    var dueDate: Long? = null,
+
+    var isArchived: Boolean = false
+)

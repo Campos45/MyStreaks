@@ -15,7 +15,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
 
-    <pt.ipt.mystreaks.HexagonColorPickerView
+    <pt.ipt.mystreaks.utils.HexagonColorPickerView
         android:id="@+id/hexagonPicker"
         android:layout_width="250dp"
         android:layout_height="250dp"

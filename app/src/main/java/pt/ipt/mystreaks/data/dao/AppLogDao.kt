@@ -1,0 +1,22 @@
+package pt.ipt.mystreaks.data.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+import pt.ipt.mystreaks.data.model.AppLog
+
+@Dao
+interface AppLogDao {
+    @Query("DELETE FROM logs_table")
+    suspend fun deleteAll()
+    @Insert
+    suspend fun insertLog(log: AppLog)
+
+    // Caso no futuro queiras criar um ecrã para ler os logs, já temos a query pronta!
+    @Query("SELECT * FROM logs_table ORDER BY timestamp DESC")
+    fun getAllLogs(): Flow<List<AppLog>>
+
+    @Query("SELECT * FROM logs_table")
+    suspend fun getAllLogsSync(): List<AppLog>
+}
