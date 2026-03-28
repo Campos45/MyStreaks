@@ -1,79 +1,46 @@
 MyStreaks 🔥
+MyStreaks é um assistente pessoal de produtividade para Android, focado na criação de hábitos consistentes, gestão de tarefas e organização de notas. A aplicação combina a psicologia de "não quebrar a corrente" (streaks) com a flexibilidade de listas de tarefas modernas.
 
-MyStreaks é uma aplicação nativa para Android, desenvolvida em Kotlin, desenhada para ser o teu hub pessoal de produtividade. Permite monitorizar a construção de hábitos diários, semanais e mensais (Streaks), bem como gerir tarefas únicas com sub-passos detalhados.
+🚀 Funcionalidades Principais
+🔥 Streaks & Hábitos
+Controlo de Consistência: Monitoriza hábitos diários, semanais ou mensais.
 
-Com uma interface moderna, gamificação integrada, e funcionalidades avançadas de persistência de dados e processos em segundo plano, a MyStreaks ajuda-te a não quebrar a corrente!
+Visualização de Histórico: Calendário integrado em cada hábito para visualizar os dias concluídos.
 
-✨ Funcionalidades Principais
-🔄 Gestão de Hábitos (Streaks)
-Múltiplas Frequências: Cria hábitos diários, semanais ou mensais.
+Notificações Personalizadas: Sistema de lembretes configuráveis por hábito para garantir que não te esqueces de nada.
 
-Sistema de Fogo (🔥): Conta automaticamente os teus dias consecutivos de sucesso.
+📝 Gestão de Tarefas (Tasks)
+Sistema de Prioridades: Define a importância das tuas tarefas com um sistema de 1 a 5 estrelas.
 
-Visão de Calendário (Heatmap): Acompanha o teu progresso num calendário mensal visual (ao estilo do GitHub) que pinta a verde os dias de sucesso.
+Sub-tarefas Dinâmicas: Divide tarefas complexas em passos menores e acionáveis.
 
-Categorias e Filtros (Tags): Organiza as tuas atividades por etiquetas (ex: 🏋️ Saúde, 💻 Trabalho) com sugestões automáticas e usa a lupa para filtrar o ecrã principal.
+Organização Inteligente: Filtros por categorias (Tags), barra de pesquisa em tempo real e separação entre pendentes, concluídas e arquivadas.
 
-Organização Drag & Drop: Mantém o dedo pressionado e arrasta as atividades para as reordenares por prioridade.
+Experiência Fluida: Interface com suporte a drag & drop para reordenação e gestos swipe para arquivamento rápido.
 
-Notificações Inteligentes e Personalizadas: Define uma hora e dia exatos para cada hábito. A aplicação desperta e envia-te um lembrete clicável para não falhares!
+📋 Listas & Notas (Keep Style)
+Edição Rica: Formatação de texto (Negrito, Itálico, Sublinhado, Cores) integrada.
 
-Motor de Validação Automático: Um serviço invisível corre em segundo plano verificando os prazos. Se falhares a meia-noite, a tua streak quebra e o teu recorde é guardado.
+Personalização Visual: Define cores de fundo para cada nota, facilitando a identificação visual.
 
-Arquivo: Desliza (Swipe) para arquivar atividades que já não queres monitorizar no dia a dia, sem perderes o seu histórico.
+Organização: Fixa notas importantes no topo e utiliza tags para categorização.
 
-📝 Gestão de Tarefas (To-Do List)
-Sub-passos Dinâmicos: Cria e edita tarefas complexas. Adiciona ou remove sub-passos dinamicamente em qualquer altura sem perderes o estado das checkboxes já marcadas.
+⚙️ Administração e Segurança
+Backup & Restauro (JSON): Exporta todos os teus dados para um ficheiro JSON e restaura-os em qualquer dispositivo. Inclui compatibilidade retroativa para versões antigas.
 
-Celebração de Conquistas (Confettis 🎉): Ao concluir todos os sub-passos, a tarefa é automaticamente finalizada com uma fantástica chuva de confettis no ecrã!
+Registo do Sistema (Logs): Histórico detalhado de ações efetuadas na app, com opção de exportação para relatório .txt.
 
-Histórico de Vitórias: As tarefas são movidas para o ecrã de "Concluídas", registando o dia e hora exatos em que foram terminadas.
+Gestão de Categorias: Sistema unificado para gerir tags específicas para cada módulo da app.
 
-🏆 Gamificação (Sala de Troféus)
-Sistema de Conquistas: A aplicação analisa o teu histórico e desbloqueia medalhas automaticamente.
-
-Medalhas de Consistência: Alcança marcas como 7, 30, 100 ou até 365 dias seguidos para ganhares troféus de resiliência.
-
-Medalhas Especiais: Desafios escondidos como "O Madrugador" (completar antes das 8h00) ou "Fim de Semana Épico".
-
-📊 Sistema de Backups ("Máquina do Tempo") e Logs
-Backup e Restauro em JSON: Exporta uma cópia exata de toda a tua aplicação (Tarefas, Streaks e Histórico) para um ficheiro seguro. Se mudares de telemóvel ou apagares algo por engano, podes restaurar a base de dados instantaneamente!
-
-Auditoria e TXT: A aplicação regista silenciosamente as tuas ações (criar, editar, concluir). Exporta tudo para um ficheiro .txt como um diário de bordo nativo.
-
-📱 Widget de Ecrã Inicial
-Acompanha o teu progresso sem abrir a app com um Widget interativo e redimensionável.
-
-Atualizações otimizadas em segundo plano para evitar bloqueios no ecrã principal (Deadlock prevention).
-
-🎨 Design e UX
-Interface limpa, moderna e focada em cartões (Material Design 3).
-
-Animações ricas (integração de Lottie para feedback visual).
-
-Empty States: Ecrãs amigáveis com dicas visuais caso não tenhas atividades listadas.
-
-Feedback de cores inteligente para diferentes frequências de atividades e estado das medalhas.
-
-🛠️ Tecnologias e Arquitetura
-Este projeto foi construído seguindo rigorosamente as melhores práticas de desenvolvimento nativo para Android:
-
+🛠️ Stack Tecnológica
 Linguagem: Kotlin
 
-Arquitetura: MVVM (Model-View-ViewModel) com Repositories.
+Arquitetura: MVVM (Model-View-ViewModel) com Clean Architecture principles.
 
-Base de Dados: Room Database (com TypeConverters e Serialização/Desserialização via Gson para listas complexas e backups).
+Base de Dados: Room Persistence Library (SQLite).
 
-Processos Assíncronos: Coroutines & Flow.
+Interface: Material Design 3, View Binding e Lottie Animations (Confetes).
 
-Trabalho em Background: WorkManager (para verificações de tempo periódicas e reset de hábitos).
+Async/Background: Kotlin Coroutines e WorkManager.
 
-Alarmes Exatos: AlarmManager e BroadcastReceivers para notificações agendadas de forma precisa (compatível com as regras restritas do Android 12+).
-
-Notificações: NotificationManager com PendingIntents e canais prioritários.
-
-Interface & Animações: XML Layouts, ViewBinding, Material Components, ItemTouchHelper (Drag & Drop e Swipes) e biblioteca Lottie (Airbnb).
-
-Armazenamento de Ficheiros: Storage Access Framework (SAF) para escrita e leitura de JSON/TXT.
-
-Widgets: AppWidgetProvider & RemoteViewsService rodando em Threads dedicadas.
+JSON Handling: Google GSON.
