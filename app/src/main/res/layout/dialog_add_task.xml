@@ -30,7 +30,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Nome da Tarefa"
-                android:inputType="textCapSentences"/>
+                android:inputType="textCapSentences"
+                android:textColor="@android:color/black"
+                android:textColorHint="#757575"
+                android:backgroundTint="@color/black"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -84,7 +87,10 @@
                 android:hint="Notas detalhadas (Opcional)"
                 android:lines="3"
                 android:gravity="top|start"
-                android:inputType="textMultiLine|textCapSentences"/>
+                android:inputType="textMultiLine|textCapSentences"
+                android:textColor="@android:color/black"
+                android:textColorHint="#757575"
+                android:backgroundTint="@color/black"/>
 
         </com.google.android.material.textfield.TextInputLayout>
 

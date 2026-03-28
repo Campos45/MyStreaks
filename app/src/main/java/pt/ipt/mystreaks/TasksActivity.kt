@@ -49,7 +49,6 @@ class TasksActivity : AppCompatActivity() {
                 logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
             },
             onEditClicked = { task -> showAddTaskDialog(task) },
-            // AÇÕES DO SWIPE NATIVO DA BIBLIOTECA
             onArchiveClicked = { task ->
                 if (!isShowingArchive) {
                     viewModel.update(task.copy(isArchived = true))
@@ -94,6 +93,10 @@ class TasksActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // FORÇAR PRETO NA PESQUISA
+        binding.etSearch.setTextColor(android.graphics.Color.BLACK)
+        binding.etSearch.setHintTextColor(android.graphics.Color.DKGRAY)
 
         binding.ivSearch.setOnClickListener {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -195,6 +198,16 @@ class TasksActivity : AppCompatActivity() {
         val isEditing = taskToEdit != null
         var selectedDueDate: Long? = taskToEdit?.dueDate
 
+        // FORÇAR PRETO EM TODOS OS CAMPOS DO DIÁLOGO
+        dialogBinding.etTaskName.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etTaskName.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        dialogBinding.etTag.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etTag.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        dialogBinding.etTaskNotes.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etTaskNotes.setHintTextColor(android.graphics.Color.DKGRAY)
+
         dialogBinding.btnDatePicker.setOnClickListener {
             val calendar = java.util.Calendar.getInstance()
             if (selectedDueDate != null) calendar.timeInMillis = selectedDueDate!!
@@ -215,7 +228,6 @@ class TasksActivity : AppCompatActivity() {
             dialogBinding.etTag.setText(taskToEdit?.tag ?: "")
             dialogBinding.etTaskNotes.setText(taskToEdit?.notes ?: "")
 
-            // NOVO: Adiciona leitura das estrelas se for edição
             dialogBinding.ratingPriority.rating = taskToEdit?.priority?.toFloat() ?: 3.0f
 
             if (selectedDueDate != null) {
@@ -239,7 +251,11 @@ class TasksActivity : AppCompatActivity() {
             val btnUp = fieldView.findViewById<android.widget.ImageView>(R.id.btnUpSubtask)
             val btnDown = fieldView.findViewById<android.widget.ImageView>(R.id.btnDownSubtask)
 
+            // FORÇAR PRETO NAS SUB-TAREFAS
+            editText.setTextColor(android.graphics.Color.BLACK)
+            editText.setHintTextColor(android.graphics.Color.DKGRAY)
             editText.setText(text)
+
             btnRemove.setOnClickListener { dialogBinding.layoutSubtaskFields.removeView(fieldView) }
             btnUp.setOnClickListener {
                 val parent = dialogBinding.layoutSubtaskFields
@@ -275,7 +291,6 @@ class TasksActivity : AppCompatActivity() {
                 val notesName = dialogBinding.etTaskNotes.text.toString().trim()
                 val finalNotes = if (notesName.isNotEmpty()) notesName else null
 
-                // NOVO: Lê a prioridade das estrelas
                 val priorityValue = dialogBinding.ratingPriority.rating.toInt()
 
                 if (taskName.isNotBlank()) {
@@ -292,12 +307,10 @@ class TasksActivity : AppCompatActivity() {
                     }
 
                     if (isEditing) {
-                        // NOVO: Grava a prioridade = priorityValue
                         viewModel.update(taskToEdit!!.copy(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate, priority = priorityValue))
                         logViewModel.registrarAcao("TAREFA_EDIT", "Editou a tarefa '$taskName'")
                         scheduleTaskAlarm(taskName, selectedDueDate)
                     } else {
-                        // NOVO: Grava a prioridade = priorityValue
                         viewModel.insert(Task(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate, priority = priorityValue))
                         logViewModel.registrarAcao("TAREFA_NOVA", "Criou a tarefa '$taskName'")
                         scheduleTaskAlarm(taskName, selectedDueDate)
@@ -339,7 +352,6 @@ class TasksActivity : AppCompatActivity() {
 
         if (dueDate > System.currentTimeMillis()) {
             try {
-                // A MÁGICA PARA CORTAR O DOZE MODE DO ANDROID:
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
                 } else {

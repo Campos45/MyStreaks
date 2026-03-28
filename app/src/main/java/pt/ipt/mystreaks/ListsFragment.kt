@@ -37,13 +37,12 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
     private lateinit var adapter: MyListAdapter
     private var isShowingArchive = false
     private var currentSearchQuery: String = ""
-    private var currentTagFilter: String = "ALL" // NOVO: Filtro ativo
+    private var currentTagFilter: String = "ALL"
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentListsBinding.bind(view)
 
-        // --- ADAPTADOR LIMPO ---
         adapter = MyListAdapter(
             onEditClicked = { showAddListDialog(it) }
         )
@@ -71,8 +70,10 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
+        // FORÇAR PRETO NA PESQUISA DAS LISTAS
         binding.etSearch.setTextColor(android.graphics.Color.BLACK)
         binding.etSearch.setHintTextColor(android.graphics.Color.DKGRAY)
+
         binding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -82,7 +83,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
-        // --- NOVO: Ligar o botão de Filtro! ---
         binding.ivFilter.setOnClickListener {
             val listTags = tagViewModel.allTags.value?.filter { it.type == "L" } ?: emptyList()
             if (listTags.isEmpty()) {
@@ -109,7 +109,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
 
         val filteredLists = safeLists.filter { list ->
             val matchesSearch = currentSearchQuery.isEmpty() || list.name.contains(currentSearchQuery, ignoreCase = true)
-            // NOVO: Aplica o Filtro Visual
             val matchesTag = when (currentTagFilter) {
                 "ALL" -> true
                 "NONE" -> list.tag.isNullOrBlank()
@@ -132,7 +131,21 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         val etListContent = dialogView.findViewById<TextInputEditText>(R.id.etListContent)
         val etTag = dialogView.findViewById<AutoCompleteTextView>(R.id.etTag)
 
-        // NOVO: OS BOTÕES DO TOPO (Arquivar, Apagar, Pin)
+        // FORÇAR PRETO EM TODOS OS CAMPOS DE TEXTO
+        etListName.setTextColor(android.graphics.Color.BLACK)
+        etListName.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        etListContent.setTextColor(android.graphics.Color.BLACK)
+        etListContent.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        etTag.setTextColor(android.graphics.Color.BLACK)
+        etTag.setHintTextColor(android.graphics.Color.DKGRAY)
+
+        // Se for uma nota nova, garantir que o fundo começa branco mas o texto é preto
+        if (listToEdit == null) {
+            dialogView.setBackgroundColor(android.graphics.Color.WHITE)
+        }
+
         val btnPin = dialogView.findViewById<ImageButton>(R.id.btnPin)
         val btnArchiveList = dialogView.findViewById<ImageButton>(R.id.btnArchiveList)
         val btnDeleteList = dialogView.findViewById<ImageButton>(R.id.btnDeleteList)
@@ -234,7 +247,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         updatePinIcon()
         btnPin.setOnClickListener { isPinned = !isPinned; updatePinIcon(); Toast.makeText(context, if (isPinned) "Afixada!" else "Desafixada.", Toast.LENGTH_SHORT).show() }
 
-        // MISTÉRIO RESOLVIDO: O Diálogo Principal
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
             .setPositiveButton("Guardar") { dialogInterface, _ ->
@@ -259,13 +271,12 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             .setNegativeButton("Cancelar", null)
             .create()
 
-        // Ligar os botões de Arquivar e Apagar no Diálogo (só aparecem se estiveres a editar uma lista já criada)
         if (listToEdit != null) {
             btnArchiveList?.visibility = View.VISIBLE
             btnDeleteList?.visibility = View.VISIBLE
 
             if(listToEdit.isArchived) {
-                btnArchiveList?.setImageResource(android.R.drawable.ic_menu_revert) // Transforma em botão de restaurar
+                btnArchiveList?.setImageResource(android.R.drawable.ic_menu_revert)
             }
 
             btnArchiveList?.setOnClickListener {

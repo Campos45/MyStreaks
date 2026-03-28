@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -45,6 +47,10 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         binding.ivSearch.setOnClickListener {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
+
+        // --- FORÇAR PRETO NA CAIXA DE PESQUISA (Fix do Dark Mode) ---
+        binding.etSearch.setTextColor(android.graphics.Color.BLACK)
+        binding.etSearch.setHintTextColor(android.graphics.Color.DKGRAY)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -125,22 +131,20 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
-        // Ligar a Lupa e Filtro nas Streaks
+        // Ligar a Lupa e Filtro nas Streaks (Bug do duplo click corrigido)
         binding.ivFilter.setOnClickListener {
-            binding.ivFilter.setOnClickListener {
-                val tagsS = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
-                val options = arrayOf("🌟 Todas", "🚫 Sem Categoria") + tagsS.map { it.name }.toTypedArray()
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Filtrar Categoria")
-                    .setItems(options) { _, which ->
-                        currentTagFilter = when(which){
-                            0 -> null
-                            1 -> "NONE"
-                            else -> options[which]
-                        }
-                        refreshUI()
-                    }.show()
-            }
+            val tagsS = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
+            val options = arrayOf("🌟 Todas", "🚫 Sem Categoria") + tagsS.map { it.name }.toTypedArray()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Filtrar Categoria")
+                .setItems(options) { _, which ->
+                    currentTagFilter = when(which){
+                        0 -> null
+                        1 -> "NONE"
+                        else -> options[which]
+                    }
+                    refreshUI()
+                }.show()
         }
     }
 
@@ -163,33 +167,33 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         val dialogBinding = pt.ipt.mystreaks.databinding.DialogAddStreakBinding.inflate(layoutInflater)
         val isEditing = streakToEdit != null
 
+        // --- FORÇAR PRETO NAS CAIXAS DE ADICIONAR STREAK (Fix Dark Mode) ---
+        dialogBinding.etActivityName.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etActivityName.setHintTextColor(android.graphics.Color.DKGRAY)
+        dialogBinding.etTag.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etTag.setHintTextColor(android.graphics.Color.DKGRAY)
+
         val streakTags = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
         dialogBinding.etTag.setAdapter(TagDropdownAdapter(requireContext(), streakTags))
         dialogBinding.etTag.setOnClickListener { dialogBinding.etTag.showDropDown() }
         dialogBinding.etTag.setOnItemClickListener { parent, _, position, _ -> dialogBinding.etTag.setText((parent.getItemAtPosition(position) as Tag).name, false) }
 
-        // --- 2. O RELÓGIO DA NOTIFICAÇÃO NAS STREAKS ---
-        // --- 2. O RELÓGIO DA NOTIFICAÇÃO (Com o TEU Switch!) ---
         var selectedHour = 9
         var selectedMinute = 0
 
         dialogBinding.switchReminder.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
-                // Quando ativa o switch, abre o relógio do Android
                 val timePicker = android.app.TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
                     selectedHour = hourOfDay
                     selectedMinute = minute
                     buttonView.text = String.format("Aviso às %02d:%02d ⏰", hourOfDay, minute)
                 }, selectedHour, selectedMinute, true)
 
-                // Se a pessoa abrir o relógio mas clicar em cancelar ou fora, o switch volta a desligar
                 timePicker.setOnCancelListener {
                     buttonView.isChecked = false
                 }
-
                 timePicker.show()
             } else {
-                // Se o utilizador desligar o switch, volta ao texto original
                 buttonView.text = "Notificação Personalizada ⏰"
             }
         }
@@ -225,23 +229,99 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
 
     private fun showStreakHistoryDialog(streak: Streak) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_calendar, null)
-        val tvMonthName = dialogView.findViewById<android.widget.TextView>(R.id.tvMonthName)
+
+        // Elementos do Calendário
+        val tvMonthName = dialogView.findViewById<TextView>(R.id.tvMonthName)
         val rvCalendar = dialogView.findViewById<RecyclerView>(R.id.rvCalendar)
+        val btnPrev = dialogView.findViewById<ImageView>(R.id.btnPrevMonth)
+        val btnNext = dialogView.findViewById<ImageView>(R.id.btnNextMonth)
 
-        val cal = Calendar.getInstance()
-        val monthNames = arrayOf("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
-        tvMonthName.text = "${monthNames[cal.get(Calendar.MONTH)]} ${cal.get(Calendar.YEAR)}"
-
-        val daysList = mutableListOf<CalendarDay>()
-        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-        for (i in 1..daysInMonth) {
-            val check = Calendar.getInstance().apply { set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), i, 0, 0, 0); set(Calendar.MILLISECOND, 0) }
-            daysList.add(CalendarDay(i.toString(), streak.completedDates.contains(check.timeInMillis), true))
-        }
+        // Elementos dos Recordes
+        val tvRecordsList = dialogView.findViewById<TextView>(R.id.tvRecordsList)
 
         rvCalendar.layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 7)
-        rvCalendar.adapter = CalendarAdapter(daysList)
-        MaterialAlertDialogBuilder(requireContext()).setView(dialogView).setPositiveButton("Fechar", null).show()
+
+        val currentCal = Calendar.getInstance()
+        val monthNames = arrayOf("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
+
+        // 1. Função que atualiza o calendário ao mudar de mês
+        fun updateCalendar() {
+            tvMonthName.text = "${monthNames[currentCal.get(Calendar.MONTH)]} ${currentCal.get(Calendar.YEAR)}"
+
+            val daysList = mutableListOf<CalendarDay>()
+            val daysInMonth = currentCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+            for (i in 1..daysInMonth) {
+                val check = Calendar.getInstance().apply {
+                    set(currentCal.get(Calendar.YEAR), currentCal.get(Calendar.MONTH), i, 0, 0, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                daysList.add(CalendarDay(i.toString(), streak.completedDates.contains(check.timeInMillis), true))
+            }
+            rvCalendar.adapter = CalendarAdapter(daysList)
+        }
+
+        // Ligar Setas
+        btnPrev.setOnClickListener { currentCal.add(Calendar.MONTH, -1); updateCalendar() }
+        btnNext.setOnClickListener { currentCal.add(Calendar.MONTH, 1); updateCalendar() }
+
+        // Atualiza a primeira vez
+        updateCalendar()
+
+        // 2. Cálculo dos Recordes para o tvRecordsList
+        var maxStreak = 0
+        var currentStreakCalc = 0
+        var previousDate: Long? = null
+
+        val sortedDates = streak.completedDates.sorted()
+        for (dateMillis in sortedDates) {
+            val cal = Calendar.getInstance().apply { timeInMillis = dateMillis }
+
+            if (previousDate == null) {
+                currentStreakCalc = 1
+            } else {
+                val prevCal = Calendar.getInstance().apply { timeInMillis = previousDate!! }
+
+                // Ignorar as horas para o cálculo ser exato
+                cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+                prevCal.set(Calendar.HOUR_OF_DAY, 0); prevCal.set(Calendar.MINUTE, 0); prevCal.set(Calendar.SECOND, 0); prevCal.set(Calendar.MILLISECOND, 0)
+
+                val diffMillis = cal.timeInMillis - prevCal.timeInMillis
+                val diffDays = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diffMillis)
+
+                when (streak.type) {
+                    "D" -> {
+                        if (diffDays == 1L) currentStreakCalc++ else if (diffDays > 1L) currentStreakCalc = 1
+                    }
+                    "S" -> {
+                        val calWeek = cal.get(Calendar.WEEK_OF_YEAR)
+                        val prevWeek = prevCal.get(Calendar.WEEK_OF_YEAR)
+                        if (calWeek == prevWeek + 1 || (prevWeek == 52 && calWeek == 1)) currentStreakCalc++ else if (calWeek != prevWeek) currentStreakCalc = 1
+                    }
+                    "M" -> {
+                        val calMonth = cal.get(Calendar.MONTH)
+                        val prevMonth = prevCal.get(Calendar.MONTH)
+                        if (calMonth == prevMonth + 1 || (prevMonth == 11 && calMonth == 0)) currentStreakCalc++ else if (calMonth != prevMonth) currentStreakCalc = 1
+                    }
+                }
+            }
+            if (currentStreakCalc > maxStreak) maxStreak = currentStreakCalc
+            previousDate = dateMillis
+        }
+
+        val typeText = when(streak.type) {
+            "S" -> "semanas"
+            "M" -> "meses"
+            else -> "dias"
+        }
+
+        // Escrever os dados na TextView dos recordes
+        tvRecordsList.text = "🔥 Maior sequência: $maxStreak $typeText\n⚡ Sequência atual: ${streak.count} $typeText"
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .setPositiveButton("Fechar", null)
+            .show()
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }

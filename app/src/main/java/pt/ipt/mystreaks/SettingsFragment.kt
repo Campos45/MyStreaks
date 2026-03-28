@@ -137,6 +137,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         var editingTag: Tag? = null
         var selectedColor = "#448AFF"
         val et = dialogView.findViewById<android.widget.EditText>(R.id.etNewTagName)
+        et.setTextColor(android.graphics.Color.BLACK)
+        et.setHintTextColor(android.graphics.Color.DKGRAY)
         val btn = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSaveTag)
         val rv = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvExistingTags)
 

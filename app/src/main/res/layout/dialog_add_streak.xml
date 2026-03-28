@@ -29,7 +29,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Nome da atividade (ex: Beber Água)"
-                android:inputType="textCapSentences"/>
+                android:inputType="textCapSentences"
+                android:textColor="@android:color/black"
+                android:textColorHint="#757575"
+                android:backgroundTint="@color/black"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
