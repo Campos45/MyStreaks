@@ -24,6 +24,7 @@ import pt.ipt.mystreaks.ui.logs.LogsActivity
 import pt.ipt.mystreaks.ui.medals.MedalsActivity
 import pt.ipt.mystreaks.R
 import pt.ipt.mystreaks.data.AppDatabase
+import pt.ipt.mystreaks.data.MyFullBackup
 import pt.ipt.mystreaks.data.model.MyList
 import pt.ipt.mystreaks.data.model.Streak
 import pt.ipt.mystreaks.data.model.Tag
@@ -32,13 +33,7 @@ import pt.ipt.mystreaks.databinding.FragmentSettingsBinding
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
-// Mudei o nome para evitar conflitos com classes velhas que tenhas no projeto
-data class MyFullBackup(
-    val streaks: List<Streak>? = null,
-    val tasks: List<Task>? = null,
-    val lists: List<MyList>? = null,
-    val tags: List<Tag>? = null
-)
+
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 

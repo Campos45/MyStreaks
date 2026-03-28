@@ -1,12 +1,13 @@
 package pt.ipt.mystreaks.data
 
-import pt.ipt.mystreaks.data.model.AppLog
+import pt.ipt.mystreaks.data.model.MyList
 import pt.ipt.mystreaks.data.model.Streak
+import pt.ipt.mystreaks.data.model.Tag
 import pt.ipt.mystreaks.data.model.Task
 
-// Esta classe serve para agrupar tudo num só pacote de exportação
-data class BackupData(
-    val streaks: List<Streak>,
-    val tasks: List<Task>,
-    val logs: List<AppLog>
+data class MyFullBackup(
+    val streaks: List<Streak>? = null,
+    val tasks: List<Task>? = null,
+    val lists: List<MyList>? = null,
+    val tags: List<Tag>? = null
 )
