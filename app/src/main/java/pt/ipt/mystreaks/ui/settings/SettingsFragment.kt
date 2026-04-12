@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -13,8 +14,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.withTransaction // <--- ADICIONADO ESTE IMPORT IMPORTANTE
+import androidx.room.withTransaction
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -25,15 +27,11 @@ import pt.ipt.mystreaks.ui.medals.MedalsActivity
 import pt.ipt.mystreaks.R
 import pt.ipt.mystreaks.data.AppDatabase
 import pt.ipt.mystreaks.data.MyFullBackup
-import pt.ipt.mystreaks.data.model.MyList
-import pt.ipt.mystreaks.data.model.Streak
 import pt.ipt.mystreaks.data.model.Tag
-import pt.ipt.mystreaks.data.model.Task
 import pt.ipt.mystreaks.databinding.FragmentSettingsBinding
+import pt.ipt.mystreaks.utils.HexagonColorPickerView
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-
-
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -78,7 +76,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     val json = InputStreamReader(requireContext().contentResolver.openInputStream(it)).readText()
                     val backup = gson.fromJson(json, MyFullBackup::class.java)
 
-                    // MUDADO AQUI DE runInTransaction PARA withTransaction
                     database.withTransaction {
                         backup.tags?.forEach { tag ->
                             if (tag.type.isNullOrEmpty()) {
@@ -148,21 +145,61 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         dialog.show()
 
         var editingTag: Tag? = null
-        var selectedColor = "#448AFF"
+        var selectedColor = "#448AFF" // Cor default (Azul)
+
         val et = dialogView.findViewById<EditText>(R.id.etNewTagName)
         et.setTextColor(Color.BLACK)
         et.setHintTextColor(Color.DKGRAY)
-        val btn = dialogView.findViewById<MaterialButton>(R.id.btnSaveTag)
-        val rv = dialogView.findViewById<RecyclerView>(R.id.rvExistingTags)
 
-        rv.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        val btn = dialogView.findViewById<MaterialButton>(R.id.btnSaveTag)
+
+        // --- LIGAR A TUA PALETA DE CORES ---
+        val colorCustom = dialogView.findViewById<MaterialCardView>(R.id.colorCustom)
+        val colorPink = dialogView.findViewById<MaterialCardView>(R.id.colorPink)
+        val colorPurple = dialogView.findViewById<MaterialCardView>(R.id.colorPurple)
+        val colorBlue = dialogView.findViewById<MaterialCardView>(R.id.colorBlue)
+        val colorGreen = dialogView.findViewById<MaterialCardView>(R.id.colorGreen)
+        val colorOrange = dialogView.findViewById<MaterialCardView>(R.id.colorOrange)
+
+        // Cliques nas cores fixas
+        colorPink.setOnClickListener { selectedColor = "#FF4081"; Toast.makeText(context, "Rosa", Toast.LENGTH_SHORT).show() }
+        colorPurple.setOnClickListener { selectedColor = "#7C4DFF"; Toast.makeText(context, "Roxo", Toast.LENGTH_SHORT).show() }
+        colorBlue.setOnClickListener { selectedColor = "#448AFF"; Toast.makeText(context, "Azul", Toast.LENGTH_SHORT).show() }
+        colorGreen.setOnClickListener { selectedColor = "#4CAF50"; Toast.makeText(context, "Verde", Toast.LENGTH_SHORT).show() }
+        colorOrange.setOnClickListener { selectedColor = "#FFAB40"; Toast.makeText(context, "Laranja", Toast.LENGTH_SHORT).show() }
+
+        // Clique no botão Lápis (Personalizada)
+        colorCustom.setOnClickListener {
+            val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
+            val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
+            val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
+            val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+
+            colorPicker.onColorChangeListener = { hex ->
+                cardPreview.setCardBackgroundColor(Color.parseColor(hex))
+                tvHex.text = hex
+            }
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setView(pickerDialogView)
+                .setPositiveButton("OK") { _, _ ->
+                    selectedColor = colorPicker.currentColorHex
+                    // Pinta o fundo do botão do Lápis com a cor que escolheste para dar feedback!
+                    colorCustom.setCardBackgroundColor(Color.parseColor(selectedColor))
+                }.show()
+        }
+
+        val rv = dialogView.findViewById<RecyclerView>(R.id.rvExistingTags)
+        rv.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+
         val tagAdapter = TagAdapter(
             onDeleteClick = { tagViewModel.delete(it) },
             onTagClick = { tag ->
                 editingTag = tag
                 et.setText(tag.name)
                 selectedColor = tag.color
+                // Se estiver a editar, pintar a bolinha do lápis com a cor da tag
+                colorCustom.setCardBackgroundColor(Color.parseColor(selectedColor))
                 btn.text = "Atualizar"
             }
         )
@@ -186,6 +223,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 et.text.clear()
                 editingTag = null
                 btn.text = "Guardar"
+
+                // Reset à cor
+                selectedColor = "#448AFF"
+                colorCustom.setCardBackgroundColor(Color.parseColor("#E0E0E0")) // Volta ao cinza
             }
         }
     }

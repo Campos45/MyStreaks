@@ -167,7 +167,39 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             adapter.setTags(allTags.filter { it.type == "S" })
         }
 
-        viewModel.activeStreaks.observe(viewLifecycleOwner) { activeList = it ?: emptyList(); if (!isShowingArchive) refreshUI() }
+        viewModel.activeStreaks.observe(viewLifecycleOwner) { streaks ->
+            activeList = streaks ?: emptyList()
+
+            // --- INÍCIO DO GUARDA-COSTAS (AUTO-RESET) ---
+            val todayLd = LocalDate.now()
+
+            activeList.forEach { streak ->
+                // Só vale a pena verificar se a streak tiver count > 0 e já tiver sido feita alguma vez
+                if (streak.count > 0 && streak.completedDates.isNotEmpty()) {
+                    val lastDateMillis = streak.completedDates.maxOrNull() ?: 0L
+
+                    if (lastDateMillis > 0L) {
+                        val lastDateLd = Instant.ofEpochMilli(lastDateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+
+                        // A Lógica Implacável do Tempo
+                        val isExpired = when (streak.type) {
+                            "D" -> ChronoUnit.DAYS.between(lastDateLd, todayLd) > 1
+                            "S" -> ChronoUnit.WEEKS.between(lastDateLd.with(DayOfWeek.MONDAY), todayLd.with(DayOfWeek.MONDAY)) > 1
+                            "M" -> ChronoUnit.MONTHS.between(lastDateLd.withDayOfMonth(1), todayLd.withDayOfMonth(1)) > 1
+                            else -> false
+                        }
+
+                        // Se o prazo expirou, reset ao contador para 0 (mantendo o histórico do calendário intacto!)
+                        if (isExpired) {
+                            viewModel.update(streak.copy(count = 0))
+                        }
+                    }
+                }
+            }
+            // --- FIM DO GUARDA-COSTAS ---
+
+            if (!isShowingArchive) refreshUI()
+        }
         viewModel.archivedStreaks.observe(viewLifecycleOwner) { archivedList = it ?: emptyList(); if (isShowingArchive) refreshUI() }
 
         binding.toggleGroupStreaks.addOnButtonCheckedListener { _, checkedId, isChecked ->

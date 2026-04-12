@@ -16,11 +16,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.AutoCompleteTextView
 import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import pt.ipt.mystreaks.utils.EditTextUndoRedo
@@ -42,7 +44,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
     private var _binding: FragmentListsBinding? = null
     private val binding get() = _binding!!
 
-    private val database by lazy { AppDatabase.Companion.getDatabase(requireContext()) }
+    private val database by lazy { AppDatabase.getDatabase(requireContext()) }
     private val repository by lazy { MyListRepository(database.myListDao()) }
     private val viewModel: MyListViewModel by viewModels { MyListViewModelFactory(repository) }
     private val logRepository by lazy { LogRepository(database.appLogDao()) }
@@ -85,7 +87,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        // FORÇAR PRETO NA PESQUISA DAS LISTAS
         binding.etSearch.setTextColor(Color.BLACK)
         binding.etSearch.setHintTextColor(Color.DKGRAY)
 
@@ -146,7 +147,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         val etListContent = dialogView.findViewById<TextInputEditText>(R.id.etListContent)
         val etTag = dialogView.findViewById<AutoCompleteTextView>(R.id.etTag)
 
-        // FORÇAR PRETO EM TODOS OS CAMPOS DE TEXTO
         etListName.setTextColor(Color.BLACK)
         etListName.setHintTextColor(Color.DKGRAY)
 
@@ -156,7 +156,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         etTag.setTextColor(Color.BLACK)
         etTag.setHintTextColor(Color.DKGRAY)
 
-        // Se for uma nota nova, garantir que o fundo começa branco mas o texto é preto
         if (listToEdit == null) {
             dialogView.setBackgroundColor(Color.WHITE)
         }
@@ -189,8 +188,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             dialogView.findViewById<ImageButton>(R.id.btnBold).apply { alpha = if (isBoldActive) 1f else 0.4f; setBackgroundColor(if (isBoldActive) Color.LTGRAY else Color.TRANSPARENT) }
             dialogView.findViewById<ImageButton>(R.id.btnItalic).apply { alpha = if (isItalicActive) 1f else 0.4f; setBackgroundColor(if (isItalicActive) Color.LTGRAY else Color.TRANSPARENT) }
             dialogView.findViewById<View>(R.id.btnUnderline).apply { alpha = if (isUnderlineActive) 1f else 0.4f; setBackgroundColor(if (isUnderlineActive) Color.LTGRAY else Color.TRANSPARENT) }
-            dialogView.findViewById<ImageButton>(R.id.btnTextColor).apply { imageTintList = if (currentTextColor != null) ColorStateList.valueOf(currentTextColor!!) else ColorStateList.valueOf(
-                Color.BLACK) }
+            dialogView.findViewById<ImageButton>(R.id.btnTextColor).apply { imageTintList = if (currentTextColor != null) ColorStateList.valueOf(currentTextColor!!) else ColorStateList.valueOf(Color.BLACK) }
         }
         updateButtonStates()
 
@@ -228,6 +226,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             Toast.makeText(context, "Modo Texto Normal ativado", Toast.LENGTH_SHORT).show()
         }
 
+        // --- CORRIGIDO: LIGAÇÃO DA COR DO TEXTO À PREVIEW ---
         dialogView.findViewById<ImageButton>(R.id.btnTextColor).setOnClickListener {
             val colors = arrayOf("Azul", "Verde", "Vermelho", "Amarelo", "Preto", "Outra...")
             val hexColors = arrayOf("#2196F3", "#4CAF50", "#F44336", "#FFEB3B", "#000000")
@@ -235,14 +234,28 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 if (which == 5) {
                     val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
                     val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
+                    val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
+                    val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+
+                    // A MAGIA: Ligar o Hexágono ao Ecrã de Preview!
+                    colorPicker.onColorChangeListener = { hex ->
+                        cardPreview.setCardBackgroundColor(Color.parseColor(hex))
+                        tvHex.text = hex
+                    }
+
                     MaterialAlertDialogBuilder(requireContext()).setView(pickerDialogView)
-                        .setPositiveButton("OK") { _, _ -> currentTextColor = Color.parseColor(colorPicker.currentColorHex); updateButtonStates() }.show()
+                        .setPositiveButton("OK") { _, _ ->
+                            currentTextColor = Color.parseColor(colorPicker.currentColorHex)
+                            updateButtonStates()
+                        }.show()
                 } else {
-                    currentTextColor = Color.parseColor(hexColors[which]); updateButtonStates()
+                    currentTextColor = Color.parseColor(hexColors[which])
+                    updateButtonStates()
                 }
             }.show()
         }
 
+        // --- CORRIGIDO: LIGAÇÃO DA COR DE FUNDO À PREVIEW ---
         dialogView.findViewById<ImageButton>(R.id.btnBgColor).setOnClickListener {
             val colors = arrayOf("Azul Claro", "Verde Claro", "Rosa", "Amarelo", "Branco", "Outra...")
             val hexColors = arrayOf("#E3F2FD", "#E8F5E9", "#FFEBEE", "#FFF9C4", "#FFFFFF")
@@ -250,11 +263,23 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 if (which == 5) {
                     val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
                     val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
+                    val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
+                    val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+
+                    // A MAGIA: Ligar o Hexágono ao Ecrã de Preview!
+                    colorPicker.onColorChangeListener = { hex ->
+                        cardPreview.setCardBackgroundColor(Color.parseColor(hex))
+                        tvHex.text = hex
+                    }
+
                     MaterialAlertDialogBuilder(requireContext()).setView(pickerDialogView)
-                        .setPositiveButton("OK") { _, _ -> currentBgColor = colorPicker.currentColorHex; dialogView.setBackgroundColor(
-                            Color.parseColor(currentBgColor)) }.show()
+                        .setPositiveButton("OK") { _, _ ->
+                            currentBgColor = colorPicker.currentColorHex
+                            dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
+                        }.show()
                 } else {
-                    currentBgColor = hexColors[which]; dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
+                    currentBgColor = hexColors[which]
+                    dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
                 }
             }.show()
         }
