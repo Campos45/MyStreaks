@@ -58,7 +58,19 @@ class StreakAdapter(
 
         fun bind(streak: Streak) {
             tvActivityName.text = streak.name
-            tvType.text = when (streak.type) { "S" -> "Semanal"; "M" -> "Mensal"; else -> "Diária" }
+
+            // --- O UPGRADE: TEXTO DO TIPO + RELÓGIO (SE EXISTIR) ---
+            val tipoBase = when (streak.type) { "S" -> "Semanal"; "M" -> "Mensal"; else -> "Diária" }
+
+            val relogioText = if (streak.remindHour != null && streak.remindMinute != null) {
+                String.format(" • ⏰ %02d:%02d", streak.remindHour, streak.remindMinute)
+            } else {
+                ""
+            }
+
+            tvType.text = "$tipoBase$relogioText"
+            // -------------------------------------------------------
+
             tvStreakCount.text = streak.count.toString()
 
             // Lógica de cores "Blindada"

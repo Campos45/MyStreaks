@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.app.AlarmManager
 import android.app.DatePickerDialog
 import android.app.PendingIntent
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -35,10 +36,11 @@ import pt.ipt.mystreaks.data.repository.LogRepository
 import pt.ipt.mystreaks.data.repository.TaskRepository
 import pt.ipt.mystreaks.databinding.DialogAddTaskBinding
 import pt.ipt.mystreaks.databinding.FragmentTasksBinding
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 class TasksFragment : Fragment(R.layout.fragment_tasks) {
 
@@ -58,20 +60,19 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
     private var completedList = emptyList<Task>()
     private lateinit var adapter: TaskAdapter
 
-    // NOVO: Controlo de Filtros
+    // Controlo de Filtros e Ordenação
     private var currentTagFilter: String = "ALL" // "ALL", "NONE" ou "NomeDaTag"
     private var currentPriorityFilter: Int? = null // 1 a 5, ou null para mostrar todas
+    private var currentSortOrder: String? = null // "ASC", "DESC" ou null
     private var currentSearchQuery: String = ""
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentTasksBinding.bind(view)
 
-        // --- CORREÇÃO DA COR DA BARRA DE PESQUISA (Forçar Preto) ---
         binding.etSearch.setTextColor(Color.BLACK)
         binding.etSearch.setHintTextColor(Color.DKGRAY)
 
-        // --- APENAS UM ADAPTADOR ---
         adapter = TaskAdapter(
             onTaskUpdate = { updatedTask ->
                 viewModel.update(updatedTask)
@@ -82,7 +83,6 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
             },
             onEditClicked = { task -> showAddTaskDialog(task) },
-            // As ações do deslizar SwipeLayout
             onArchiveClicked = { task ->
                 if (!isShowingArchive) {
                     viewModel.update(task.copy(isArchived = true))
@@ -114,9 +114,8 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             adapter.setTags(taskTags)
         }
 
-        // --- O SUPER MENU DE FILTROS (Categoria & Prioridade) ---
         binding.ivFilter.setOnClickListener {
-            val filterTypes = arrayOf("🏷️ Filtrar por Categoria", "⭐ Filtrar por Prioridade", "❌ Limpar Todos os Filtros")
+            val filterTypes = arrayOf("🏷️ Filtrar por Categoria", "⭐ Ordenar ou Filtrar por Prioridade", "❌ Limpar Todos os Filtros")
 
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Filtros")
@@ -137,18 +136,37 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                                     refreshUI()
                                 }.show()
                         }
-                        1 -> { // Por Prioridade
-                            val prioOptions = arrayOf("⭐ 1 (Muito Baixa)", "⭐⭐ 2 (Baixa)", "⭐⭐⭐ 3 (Média)", "⭐⭐⭐⭐ 4 (Alta)", "⭐⭐⭐⭐⭐ 5 (Urgente)")
+                        1 -> { // Ordenação e Filtro por Prioridade
+                            val prioOptions = arrayOf(
+                                "⬆️ Ordenar: Menor Prioridade Primeiro",
+                                "⬇️ Ordenar: Maior Prioridade Primeiro",
+                                "--- Mostrar Apenas: ---",
+                                "⭐ 1 (Muito Baixa)",
+                                "⭐⭐ 2 (Baixa)",
+                                "⭐⭐⭐ 3 (Média)",
+                                "⭐⭐⭐⭐ 4 (Alta)",
+                                "⭐⭐⭐⭐⭐ 5 (Urgente)"
+                            )
                             MaterialAlertDialogBuilder(requireContext())
-                                .setTitle("Escolher Prioridade")
+                                .setTitle("Prioridade")
                                 .setItems(prioOptions) { _, prioIndex ->
-                                    currentPriorityFilter = prioIndex + 1
+                                    when (prioIndex) {
+                                        0 -> { currentSortOrder = "ASC"; currentPriorityFilter = null }
+                                        1 -> { currentSortOrder = "DESC"; currentPriorityFilter = null }
+                                        2 -> { /* Separador, ignorar */ }
+                                        else -> {
+                                            // Como temos 3 opções antes (0, 1 e 2), subtraímos 2 para bater certo com a prioridade (1 a 5)
+                                            currentPriorityFilter = prioIndex - 2
+                                            currentSortOrder = null // Limpa a ordenação se o utilizador quiser ver só uma específica
+                                        }
+                                    }
                                     refreshUI()
                                 }.show()
                         }
                         2 -> { // Limpar Filtros
                             currentTagFilter = "ALL"
                             currentPriorityFilter = null
+                            currentSortOrder = null
                             refreshUI()
                             Toast.makeText(requireContext(), "Filtros limpos!", Toast.LENGTH_SHORT).show()
                         }
@@ -202,25 +220,29 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             pendingList.filter { !it.isArchived }
         }
 
-        // --- LÓGICA DE FILTRAGEM TRIPLA ---
-        val currentList = baseList.filter { task ->
-            // Filtro 1: Categoria (Tag)
+        // 1. LÓGICA DE FILTRAGEM TRIPLA
+        val filteredList = baseList.filter { task ->
             val matchesTag = when (currentTagFilter) {
                 "ALL" -> true
                 "NONE" -> task.tag.isNullOrBlank()
                 else -> task.tag == currentTagFilter
             }
-            // Filtro 2: Prioridade
             val matchesPriority = currentPriorityFilter == null || task.priority == currentPriorityFilter
-            // Filtro 3: Pesquisa de Texto
             val matchesSearch = currentSearchQuery.isEmpty() || task.name.contains(currentSearchQuery, ignoreCase = true)
 
             matchesTag && matchesPriority && matchesSearch
         }
 
-        adapter.submitList(currentList)
+        // 2. ORDENAÇÃO
+        val finalList = when (currentSortOrder) {
+            "ASC" -> filteredList.sortedBy { it.priority }
+            "DESC" -> filteredList.sortedByDescending { it.priority }
+            else -> filteredList
+        }
 
-        if (currentList.isEmpty()) {
+        adapter.submitList(finalList)
+
+        if (finalList.isEmpty()) {
             binding.recyclerViewTasks.visibility = View.GONE
             binding.layoutEmptyState.visibility = View.VISIBLE
             if (isShowingArchive) {
@@ -257,6 +279,13 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             dialogBinding.etTag.setText(selectedTag.name, false)
         }
 
+        // API MODERNA DE DATAS (LocalDate) no Fragment, tal como tínhamos ajustado
+        val initialDate = if (selectedDueDate != null) {
+            Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDate()
+        } else {
+            LocalDate.now()
+        }
+
         if (isEditing) {
             dialogBinding.tvDialogTitle.text = "Editar Tarefa"
             dialogBinding.etTaskName.setText(taskToEdit?.name)
@@ -265,24 +294,27 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             dialogBinding.ratingPriority.rating = taskToEdit?.priority?.toFloat() ?: 3.0f
 
             if (selectedDueDate != null) {
-                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                dialogBinding.btnDatePicker.text = "Prazo: ${sdf.format(Date(selectedDueDate!!))}"
+                val zdt = Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                dialogBinding.btnDatePicker.text = "Prazo: ${zdt.format(formatter)}"
             }
         } else {
             dialogBinding.ratingPriority.rating = 3.0f
         }
 
         dialogBinding.btnDatePicker.setOnClickListener {
-            val calendar = Calendar.getInstance()
-            if (selectedDueDate != null) calendar.timeInMillis = selectedDueDate!!
-
             DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
-                val selectedCal = Calendar.getInstance()
-                selectedCal.set(year, month, dayOfMonth, 9, 0, 0)
-                selectedDueDate = selectedCal.timeInMillis
-                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                dialogBinding.btnDatePicker.text = "Prazo: ${sdf.format(selectedCal.time)}"
-            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                val pickedDate = LocalDate.of(year, month + 1, dayOfMonth)
+
+                TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
+                    val zdt = pickedDate.atTime(hourOfDay, minute).atZone(ZoneId.systemDefault())
+                    selectedDueDate = zdt.toInstant().toEpochMilli()
+
+                    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                    dialogBinding.btnDatePicker.text = "Prazo: ${zdt.toLocalDateTime().format(formatter)}"
+                }, 9, 0, true).show()
+
+            }, initialDate.year, initialDate.monthValue - 1, initialDate.dayOfMonth).show()
         }
 
         fun addSubtaskField(text: String = "") {
@@ -403,14 +435,12 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
 
         if (dueDate > System.currentTimeMillis()) {
             try {
-                // A MÁGICA PARA CORTAR O DOZE MODE DO ANDROID:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
                 } else {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
                 }
             } catch (e: SecurityException) {
-                // Caso o utilizador não tenha dado permissão (Android 14+), faz um fallback seguro
                 alarmManager.set(AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
             }
         }

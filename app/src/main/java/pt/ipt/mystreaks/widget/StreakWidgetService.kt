@@ -8,6 +8,8 @@ import kotlinx.coroutines.runBlocking
 import pt.ipt.mystreaks.R
 import pt.ipt.mystreaks.data.AppDatabase
 import pt.ipt.mystreaks.data.model.Streak
+import java.time.LocalDate
+import java.time.ZoneId
 
 class StreakWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
@@ -21,7 +23,7 @@ class StreakWidgetFactory(private val context: Context) : RemoteViewsService.Rem
 
     override fun onCreate() {}
 
-    // O Android chama isto para atualizar a lista
+    // O Android chama isto para atualizar a lista do widget
     override fun onDataSetChanged() {
         // Corre em modo "bloqueio" rápido porque os widgets precisam da resposta imediata
         runBlocking {
@@ -41,7 +43,18 @@ class StreakWidgetFactory(private val context: Context) : RemoteViewsService.Rem
         val views = RemoteViews(context.packageName, R.layout.widget_streak_item)
 
         views.setTextViewText(R.id.tvWidgetStreakName, streak.name)
-        val icon = if (streak.isCompleted) "✅" else "🔥"
+
+        // --- O UPGRADE: CALCULAR SE FOI FEITO HOJE ---
+        // Pegamos na meia-noite exata do dia atual
+        val todayMidnight = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        // Verificamos se essa meia-noite consta no histórico de dias concluídos desta Streak
+        val isCompletedToday = streak.completedDates.contains(todayMidnight)
+
+        // Desenha o ícone correto com base na realidade de hoje!
+        val icon = if (isCompletedToday) "✅" else "🔥"
+        // ---------------------------------------------
+
         views.setTextViewText(R.id.tvWidgetStreakCount, "$icon ${streak.count}")
 
         // Diz que se clicarmos neste item, ele deve disparar o Intent que abre a App

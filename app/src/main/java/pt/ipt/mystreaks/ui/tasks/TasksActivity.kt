@@ -5,6 +5,7 @@ import android.animation.Animator
 import android.app.AlarmManager
 import android.app.DatePickerDialog
 import android.app.PendingIntent
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
@@ -58,6 +59,7 @@ class TasksActivity : AppCompatActivity() {
     private var currentTagFilter: String? = null
     private var currentSearchQuery: String = ""
     private var isShowingArchive = false
+    private var currentSortOrder: String? = null // PODE SER ASC ou DESC
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,19 +104,42 @@ class TasksActivity : AppCompatActivity() {
 
         binding.ivFilter.setOnClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
-                val tags = database.tagDao().getAllTagsSyncList().filter { it.type == "T" }.map { it.name }
+                // Vai buscar as tags existentes para tarefas
+                val tags = database.tagDao().getAllTagsSyncList()
+                    .filter { it.type == "T" }
+                    .map { it.name }
+
                 withContext(Dispatchers.Main) {
-                    if (tags.isEmpty()) {
-                        Toast.makeText(this@TasksActivity, "Ainda não tens categorias nas tarefas.", Toast.LENGTH_SHORT).show()
-                        return@withContext
-                    }
-                    val options = arrayOf("🌟 Todas") + tags.toTypedArray()
+                    // ARRAY OF OPTIONS (Índices fixos!)
+                    // 0: Menor Prioridade
+                    // 1: Maior Prioridade
+                    // 2: Limpar Filtros
+                    // 3: Sem Categoria (Extraído do teu código anterior)
+                    // 4: Separador
+                    val options = arrayOf(
+                        "⬆️ Menor Prioridade primeiro (1 Estrela)",
+                        "⬇️ Maior Prioridade primeiro (5 Estrelas)",
+                        "🌟 Limpar Filtros / Ordem Padrão",
+                        "🚫 Sem Categoria",
+                        "--- Categorias Abaixo ---"
+                    ) + tags.toTypedArray()
 
                     MaterialAlertDialogBuilder(this@TasksActivity)
-                        .setTitle("Filtrar por Categoria")
+                        .setTitle("Ordenar e Filtrar")
                         .setItems(options) { _, which ->
-                            currentTagFilter = if (which == 0) null else options[which]
-                            refreshUI()
+                            when (which) {
+                                0 -> { currentSortOrder = "ASC"; refreshUI() }
+                                1 -> { currentSortOrder = "DESC"; refreshUI() }
+                                2 -> { currentSortOrder = null; currentTagFilter = null; refreshUI() }
+                                3 -> { currentSortOrder = null; currentTagFilter = "NONE"; refreshUI() }
+                                4 -> { /* Separador, não faz nada */ }
+                                else -> {
+                                    // Pega no nome da tag correspondente ao clique
+                                    currentSortOrder = null // Ao filtrar por categoria, remove a ordenação para não haver confusão
+                                    currentTagFilter = options[which]
+                                    refreshUI()
+                                }
+                            }
                         }
                         .show()
                 }
@@ -171,14 +196,29 @@ class TasksActivity : AppCompatActivity() {
             pendingList.filter { !it.isArchived }
         }
 
-        val currentList = baseList.filter {
-            (currentTagFilter == null || it.tag == currentTagFilter) &&
-                    (currentSearchQuery.isEmpty() || it.name.contains(currentSearchQuery, ignoreCase = true))
+        // 1. Filtrar (Pesquisa e Categoria)
+        val filteredList = baseList.filter { task ->
+            val matchesSearch = currentSearchQuery.isEmpty() || task.name.contains(currentSearchQuery, ignoreCase = true)
+            val matchesTag = when(currentTagFilter){
+                null -> true
+                "NONE" -> task.tag.isNullOrBlank()
+                else -> task.tag == currentTagFilter
+            }
+            matchesSearch && matchesTag
         }
 
-        adapter.submitList(currentList)
+        // 2. Ordenar por Prioridade!
+        val finalList = when (currentSortOrder) {
+            "ASC" -> filteredList.sortedBy { it.priority } // 1 a 5
+            "DESC" -> filteredList.sortedByDescending { it.priority } // 5 a 1
+            else -> filteredList // Ordem original inserida na BD
+        }
 
-        if (currentList.isEmpty()) {
+        // 3. Enviar a lista final ordenada e filtrada para o Adapter
+        adapter.submitList(finalList)
+
+        // 4. Tratamento do Ecrã Vazio e Visibilidades (agora lida com a finalList)
+        if (finalList.isEmpty()) {
             binding.recyclerViewTasks.visibility = View.GONE
             binding.layoutEmptyState.visibility = View.VISIBLE
             if (isShowingArchive) {
@@ -231,21 +271,25 @@ class TasksActivity : AppCompatActivity() {
         dialogBinding.etTaskNotes.setTextColor(Color.BLACK)
         dialogBinding.etTaskNotes.setHintTextColor(Color.DKGRAY)
 
-        // API MODERNA DE DATAS
         val initialDate = if (selectedDueDate != null) {
             Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDate()
         } else {
             LocalDate.now()
         }
 
+        // LIGAÇÃO DO CALENDÁRIO COM HORAS QUE REPARAMOS HÁ POUCO TEMPO
         dialogBinding.btnDatePicker.setOnClickListener {
             DatePickerDialog(this, { _, year, month, dayOfMonth ->
                 val pickedDate = LocalDate.of(year, month + 1, dayOfMonth)
-                val zdt = pickedDate.atTime(9, 0).atZone(ZoneId.systemDefault())
-                selectedDueDate = zdt.toInstant().toEpochMilli()
 
-                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                dialogBinding.btnDatePicker.text = "Prazo: ${pickedDate.format(formatter)}"
+                TimePickerDialog(this, { _, hourOfDay, minute ->
+                    val zdt = pickedDate.atTime(hourOfDay, minute).atZone(ZoneId.systemDefault())
+                    selectedDueDate = zdt.toInstant().toEpochMilli()
+
+                    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                    dialogBinding.btnDatePicker.text = "Prazo: ${zdt.toLocalDateTime().format(formatter)}"
+                }, 9, 0, true).show()
+
             }, initialDate.year, initialDate.monthValue - 1, initialDate.dayOfMonth).show()
         }
 
@@ -258,8 +302,8 @@ class TasksActivity : AppCompatActivity() {
             dialogBinding.ratingPriority.rating = taskToEdit?.priority?.toFloat() ?: 3.0f
 
             if (selectedDueDate != null) {
-                val date = Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDate()
-                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                val date = Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                 dialogBinding.btnDatePicker.text = "Prazo: ${date.format(formatter)}"
             }
         }

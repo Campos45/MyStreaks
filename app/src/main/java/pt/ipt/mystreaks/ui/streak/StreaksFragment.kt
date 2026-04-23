@@ -2,6 +2,8 @@ package pt.ipt.mystreaks.ui.streak
 
 import android.Manifest
 import android.app.TimePickerDialog
+import android.appwidget.AppWidgetManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
@@ -153,6 +155,10 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                         currentStartDate = if (newCount == 1 && streak.count == 0) System.currentTimeMillis() else streak.currentStartDate
                     )
                 )
+
+                requireContext().sendBroadcast(Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+                    setPackage(requireContext().packageName)
+                })
             },
             onHistoryClicked = { showStreakHistoryDialog(it) },
             onEditClicked = { showAddStreakDialog(it) },
@@ -246,33 +252,42 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
     }
 
     private fun showAddStreakDialog(streakToEdit: Streak? = null) {
-        val dialogBinding = DialogAddStreakBinding.inflate(layoutInflater)
+        val dialogBinding = pt.ipt.mystreaks.databinding.DialogAddStreakBinding.inflate(layoutInflater)
         val isEditing = streakToEdit != null
 
-        dialogBinding.etActivityName.setTextColor(Color.BLACK)
-        dialogBinding.etActivityName.setHintTextColor(Color.DKGRAY)
-        dialogBinding.etTag.setTextColor(Color.BLACK)
-        dialogBinding.etTag.setHintTextColor(Color.DKGRAY)
+        dialogBinding.etActivityName.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etActivityName.setHintTextColor(android.graphics.Color.DKGRAY)
+        dialogBinding.etTag.setTextColor(android.graphics.Color.BLACK)
+        dialogBinding.etTag.setHintTextColor(android.graphics.Color.DKGRAY)
 
         val streakTags = tagViewModel.allTags.value?.filter { it.type == "S" } ?: emptyList()
         dialogBinding.etTag.setAdapter(TagDropdownAdapter(requireContext(), streakTags))
         dialogBinding.etTag.setOnClickListener { dialogBinding.etTag.showDropDown() }
         dialogBinding.etTag.setOnItemClickListener { parent, _, position, _ -> dialogBinding.etTag.setText((parent.getItemAtPosition(position) as Tag).name, false) }
 
-        var selectedHour = 9
-        var selectedMinute = 0
+        // --- 1. LER AS HORAS GRAVADAS (Se existirem) ---
+        var selectedHour = streakToEdit?.remindHour ?: 9
+        var selectedMinute = streakToEdit?.remindMinute ?: 0
 
+        // Se já havia alarme, liga o Toggle e escreve as horas!
+        if (streakToEdit?.remindHour != null && streakToEdit.remindMinute != null) {
+            dialogBinding.switchReminder.isChecked = true
+            dialogBinding.switchReminder.text = String.format("Aviso às %02d:%02d ⏰", selectedHour, selectedMinute)
+        } else {
+            dialogBinding.switchReminder.isChecked = false
+            dialogBinding.switchReminder.text = "Notificação Personalizada ⏰"
+        }
+
+        // --- 2. GESTÃO DO CLIQUE NO TOGGLE ---
         dialogBinding.switchReminder.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
-                val timePicker = TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
+                val timePicker = android.app.TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
                     selectedHour = hourOfDay
                     selectedMinute = minute
                     buttonView.text = String.format("Aviso às %02d:%02d ⏰", hourOfDay, minute)
                 }, selectedHour, selectedMinute, true)
 
-                timePicker.setOnCancelListener {
-                    buttonView.isChecked = false
-                }
+                timePicker.setOnCancelListener { buttonView.isChecked = false }
                 timePicker.show()
             } else {
                 buttonView.text = "Notificação Personalizada ⏰"
@@ -292,23 +307,53 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                 val tagName = dialogBinding.etTag.text.toString().trim()
                 val finalTag = if (tagName.isNotEmpty()) tagName else null
 
+                // Só guarda as horas se o Toggle ficou ativado!
+                val finalHour = if (dialogBinding.switchReminder.isChecked) selectedHour else null
+                val finalMinute = if (dialogBinding.switchReminder.isChecked) selectedMinute else null
+
                 if (name.isNotBlank()) {
                     if (finalTag != null) {
                         val exists = tagViewModel.allTags.value?.any { it.name.trim().equals(finalTag, true) } ?: false
-                        if (!exists) tagViewModel.insert(
-                            Tag(
-                                name = finalTag,
-                                color = "#757575",
-                                type = "S"
-                            )
-                        )
+                        if (!exists) tagViewModel.insert(Tag(name = finalTag, color = "#757575", type = "S"))
                     }
 
                     if (isEditing) {
-                        viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag))
+                        viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag, remindHour = finalHour, remindMinute = finalMinute))
                         Toast.makeText(requireContext(), "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
                     } else {
-                        viewModel.insert(Streak(name = name, tag = finalTag, type = "D"))
+                        // Atenção: type = "D" assume que é Diária. Podes querer ajustar isto se tiveres RadioButtons de Tipo!
+                        viewModel.insert(Streak(name = name, tag = finalTag, type = "D", remindHour = finalHour, remindMinute = finalMinute))
+                    }
+
+                    // --- 3. CRIAR/CANCELAR O ALARME NO ANDROID ---
+                    val alarmManager = requireContext().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+                    val intent = android.content.Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
+                        putExtra("STREAK_NAME", name)
+                    }
+                    val pendingIntent = android.app.PendingIntent.getBroadcast(
+                        requireContext(), name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    if (finalHour != null && finalMinute != null) {
+                        val cal = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, finalHour)
+                            set(java.util.Calendar.MINUTE, finalMinute)
+                            set(java.util.Calendar.SECOND, 0)
+                            if (before(java.util.Calendar.getInstance())) add(java.util.Calendar.DATE, 1)
+                        }
+
+                        // A FORÇA BRUTA: Fura o Modo de Bateria do Android
+                        try {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                            } else {
+                                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                            }
+                        } catch (e: SecurityException) {
+                            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                        }
+                    } else {
+                        alarmManager.cancel(pendingIntent)
                     }
                 }
             }.show()
