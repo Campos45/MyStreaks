@@ -76,6 +76,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     val json = InputStreamReader(requireContext().contentResolver.openInputStream(it)).readText()
                     val backup = gson.fromJson(json, MyFullBackup::class.java)
 
+                    // 1. INSERE NA BASE DE DADOS
                     database.withTransaction {
                         backup.tags?.forEach { tag ->
                             if (tag.type.isNullOrEmpty()) {
@@ -96,8 +97,68 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         backup.lists?.forEach { database.myListDao().insert(it) }
                     }
 
+                    // --- A CURA DA AMNÉSIA: 2. RECONSTRUIR OS ALARMES NO ANDROID ---
+                    val alarmManager = requireContext().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+
+                    // Reagendar Tarefas
+                    backup.tasks?.forEach { task ->
+                        // FIX: Criar uma variável local imutável (val) para o Kotlin confiar
+                        val safeDueDate = task.dueDate
+
+                        if (!task.isCompleted && !task.isArchived && safeDueDate != null && safeDueDate > System.currentTimeMillis()) {
+                            val intent = Intent(requireContext(), pt.ipt.mystreaks.services.TaskAlarmReceiver::class.java).apply {
+                                putExtra("TASK_NAME", task.name)
+                            }
+                            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                                requireContext(), task.name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                            )
+                            try {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, safeDueDate, pendingIntent)
+                                } else {
+                                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, safeDueDate, pendingIntent)
+                                }
+                            } catch (e: SecurityException) {
+                                alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, safeDueDate, pendingIntent)
+                            }
+                        }
+                    }
+
+                    // Reagendar Streaks
+                    backup.streaks?.forEach { streak ->
+                        val safeHour = streak.remindHour
+                        val safeMinute = streak.remindMinute
+
+                        if (!streak.isArchived && safeHour != null && safeMinute != null) {
+                            val intent = Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
+                                putExtra("STREAK_NAME", streak.name)
+                            }
+                            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                                requireContext(), streak.name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                            )
+
+                            val cal = java.util.Calendar.getInstance().apply {
+                                set(java.util.Calendar.HOUR_OF_DAY, safeHour)
+                                set(java.util.Calendar.MINUTE, safeMinute)
+                                set(java.util.Calendar.SECOND, 0)
+                                if (before(java.util.Calendar.getInstance())) add(java.util.Calendar.DATE, 1)
+                            }
+
+                            try {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                                } else {
+                                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                                }
+                            } catch (e: SecurityException) {
+                                alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                            }
+                        }
+                    }
+                    // --------------------------------------------------------------
+
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "Importado com sucesso! 📥", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Importado com sucesso e Alarmes reativados! 📥⏰", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
