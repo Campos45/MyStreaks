@@ -118,9 +118,7 @@ class TaskAdapter(
 
             binding.ivEdit.setOnClickListener { currentlyOpenLayout?.close(true); onEditClicked(task) }
 
-            // --- LÓGICA DAS SUB-TAREFAS ---
-            binding.layoutSubTasks.removeAllViews()
-
+            // --- LÓGICA DAS SUB-TAREFAS OTIMIZADA ---
             if (task.subTasks.isNotEmpty()) {
                 binding.ivExpand.visibility = View.VISIBLE
                 val isExpanded = expandedTasks.contains(task.id)
@@ -132,9 +130,27 @@ class TaskAdapter(
                     notifyItemChanged(adapterPosition)
                 }
 
+                val currentChildCount = binding.layoutSubTasks.childCount
+                val targetChildCount = task.subTasks.size
+
+                // Remove as vistas excedentes se existirem mais do que as necessárias
+                if (currentChildCount > targetChildCount) {
+                    binding.layoutSubTasks.removeViews(targetChildCount, currentChildCount - targetChildCount)
+                }
+
                 val inflater = LayoutInflater.from(binding.root.context)
                 task.subTasks.forEachIndexed { index, subTask ->
-                    val cbSubTask = inflater.inflate(R.layout.item_subtask, binding.layoutSubTasks, false) as CheckBox
+                    // Reutiliza a CheckBox existente se possível, ou infla uma nova se necessário
+                    val cbSubTask = if (index < currentChildCount) {
+                        binding.layoutSubTasks.getChildAt(index) as CheckBox
+                    } else {
+                        val newCb = inflater.inflate(R.layout.item_subtask, binding.layoutSubTasks, false) as CheckBox
+                        binding.layoutSubTasks.addView(newCb)
+                        newCb
+                    }
+
+                    // Limpa o listener antigo antes de preencher os novos dados para evitar disparos acidentais
+                    cbSubTask.setOnCheckedChangeListener(null)
                     cbSubTask.text = subTask.name
                     cbSubTask.isChecked = subTask.isCompleted
 
@@ -151,11 +167,11 @@ class TaskAdapter(
                         )
                         onTaskUpdate(updatedTask)
                     }
-                    binding.layoutSubTasks.addView(cbSubTask)
                 }
             } else {
                 binding.ivExpand.visibility = View.GONE
                 binding.layoutSubTasks.visibility = View.GONE
+                binding.layoutSubTasks.removeAllViews()
             }
 
             binding.cbTaskCompleted.setOnCheckedChangeListener { _, isChecked ->

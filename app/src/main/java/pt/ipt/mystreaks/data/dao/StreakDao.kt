@@ -12,7 +12,7 @@ import pt.ipt.mystreaks.data.model.Streak
 @Dao
 interface StreakDao {
     @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(streak: Streak)
+    suspend fun insert(streak: Streak): Long
 
     @Update
     suspend fun update(streak: Streak)

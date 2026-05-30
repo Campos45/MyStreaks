@@ -22,14 +22,36 @@ import java.util.Calendar
 
 class StreakAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val streakName = intent.getStringExtra("STREAK_NAME") ?: return
+        // 1. SUPORTE PARA REBOOT
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == "android.intent.action.QUICKBOOT_POWERON") {
+            val pendingResult = goAsync()
+            val database = AppDatabase.getDatabase(context)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val streaks = database.streakDao().getAllStreaksSync()
+                    for (streak in streaks) {
+                        if (!streak.isArchived && streak.remindHour != null && streak.remindMinute != null) {
+                            scheduleNextDay(context, streak)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
+                }
+            }
+            return
+        }
+
+        // 2. DISPARO NORMAL DE LEMBRETE
+        val streakId = intent.getIntExtra("STREAK_ID", -1)
+        if (streakId == -1) return
         val pendingResult = goAsync() // Segura o processo para não morrer
 
         val database = AppDatabase.getDatabase(context)
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val streaks = database.streakDao().getAllStreaksSync()
-                val streak = streaks.find { it.name == streakName }
+                val streak = database.streakDao().getStreakById(streakId)
 
                 if (streak != null && !streak.isArchived) {
                     val todayMidnight = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -55,18 +77,21 @@ class StreakAlarmReceiver : BroadcastReceiver() {
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val nextIntent = Intent(context, StreakAlarmReceiver::class.java).apply {
-            putExtra("STREAK_NAME", streak.name)
+            putExtra("STREAK_ID", streak.id)
         }
         val pendingIntent = PendingIntent.getBroadcast(
-            context, streak.name.hashCode(), nextIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            context, streak.id, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Calcula a mesma hora para o dia seguinte
+        // Calcula a mesma hora de forma inteligente (se já passou da hora hoje, agenda para amanhã)
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, streak.remindHour!!)
             set(Calendar.MINUTE, streak.remindMinute!!)
             set(Calendar.SECOND, 0)
-            add(Calendar.DATE, 1)
+            set(Calendar.MILLISECOND, 0)
+            if (before(Calendar.getInstance())) {
+                add(Calendar.DATE, 1)
+            }
         }
 
         try {

@@ -73,33 +73,7 @@ class StreakAdapter(
 
             tvStreakCount.text = streak.count.toString()
 
-            // Lógica de cores "Blindada"
-            if (!streak.tag.isNullOrBlank()) {
-                tvTag.visibility = View.VISIBLE
-                val cleanTagName = streak.tag?.trim() ?: ""
-                tvTag.text = cleanTagName
 
-                // Procurar a cor com máxima precisão
-                val tagEncontrada = tagsList.find {
-                    it.name.trim().equals(cleanTagName, ignoreCase = true)
-                }
-
-                val tagColorHex = tagEncontrada?.color ?: "#757575"
-
-                try {
-                    val shape = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 32f
-                        setColor(Color.parseColor(tagColorHex))
-                    }
-                    tvTag.background = shape
-                    tvTag.setTextColor(Color.WHITE)
-                } catch (e: Exception) {
-                    tvTag.setBackgroundColor(Color.GRAY)
-                }
-            } else {
-                tvTag.visibility = View.GONE
-            }
 
             cbCompleted.setOnCheckedChangeListener(null)
             cbCompleted.isChecked = streak.isCompleted

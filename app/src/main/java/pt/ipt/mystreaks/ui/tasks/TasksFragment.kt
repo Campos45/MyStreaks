@@ -19,6 +19,10 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -76,8 +80,13 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         adapter = TaskAdapter(
             onTaskUpdate = { updatedTask ->
                 viewModel.update(updatedTask)
-                if (updatedTask.isCompleted && !updatedTask.isArchived) {
-                    playConfettiAnimation()
+                if (updatedTask.isCompleted) {
+                    cancelTaskAlarm(updatedTask.id, updatedTask.name)
+                    if (!updatedTask.isArchived) {
+                        playConfettiAnimation()
+                    }
+                } else if (updatedTask.dueDate != null && !updatedTask.isArchived) {
+                    scheduleTaskAlarm(updatedTask.id, updatedTask.name, updatedTask.dueDate)
                 }
                 val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
                 logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
@@ -86,23 +95,33 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             onArchiveClicked = { task ->
                 if (!isShowingArchive) {
                     viewModel.update(task.copy(isArchived = true))
+                    cancelTaskAlarm(task.id, task.name)
                     logViewModel.registrarAcao("TAREFA", "Arquivou a tarefa '${task.name}'")
                     Snackbar.make(binding.root, "Tarefa arquivada 📁", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = false)) }
+                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = false)); if (task.dueDate != null) scheduleTaskAlarm(task.id, task.name, task.dueDate) }
                         .show()
                 } else {
                     viewModel.update(task.copy(isArchived = false))
+                    if (task.dueDate != null && !task.isCompleted) {
+                        scheduleTaskAlarm(task.id, task.name, task.dueDate)
+                    }
                     logViewModel.registrarAcao("TAREFA", "Restaurou a tarefa '${task.name}'")
                     Snackbar.make(binding.root, "Tarefa restaurada 📝", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = true)) }
+                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = true)); cancelTaskAlarm(task.id, task.name) }
                         .show()
                 }
             },
             onDeleteClicked = { task ->
                 viewModel.delete(task)
+                cancelTaskAlarm(task.id, task.name)
                 logViewModel.registrarAcao("TAREFA", "Eliminou '${task.name}'")
                 Snackbar.make(binding.root, "Tarefa eliminada 🗑️", Snackbar.LENGTH_LONG)
-                    .setAction("DESFAZER") { viewModel.insert(task) }.show()
+                    .setAction("DESFAZER") {
+                        viewModel.insert(task)
+                        if (task.dueDate != null && !task.isCompleted && !task.isArchived) {
+                            scheduleTaskAlarm(task.id, task.name, task.dueDate)
+                        }
+                    }.show()
             }
         )
 
@@ -385,20 +404,28 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                     if (isEditing) {
                         viewModel.update(taskToEdit!!.copy(name = taskName, subTasks = newSubTasksList, tag = finalTag, notes = finalNotes, dueDate = selectedDueDate, priority = priorityValue))
                         logViewModel.registrarAcao("TAREFA_EDIT", "Editou a tarefa '$taskName'")
-                        scheduleTaskAlarm(taskName, selectedDueDate)
+                        cancelTaskAlarm(taskToEdit.id, taskToEdit.name)
+                        if (selectedDueDate != null) {
+                            scheduleTaskAlarm(taskToEdit.id, taskName, selectedDueDate)
+                        }
                     } else {
-                        viewModel.insert(
-                            Task(
-                                name = taskName,
-                                subTasks = newSubTasksList,
-                                tag = finalTag,
-                                notes = finalNotes,
-                                dueDate = selectedDueDate,
-                                priority = priorityValue
-                            )
+                        val newTask = Task(
+                            name = taskName,
+                            subTasks = newSubTasksList,
+                            tag = finalTag,
+                            notes = finalNotes,
+                            dueDate = selectedDueDate,
+                            priority = priorityValue
                         )
-                        logViewModel.registrarAcao("TAREFA_NOVA", "Criou a tarefa '$taskName'")
-                        scheduleTaskAlarm(taskName, selectedDueDate)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val newId = withContext(Dispatchers.IO) {
+                                viewModel.insertAndGetId(newTask)
+                            }
+                            logViewModel.registrarAcao("TAREFA_NOVA", "Criou a tarefa '$taskName'")
+                            if (selectedDueDate != null) {
+                                scheduleTaskAlarm(newId.toInt(), taskName, selectedDueDate)
+                            }
+                        }
                     }
                 } else {
                     Toast.makeText(requireContext(), "O nome da tarefa não pode estar vazio", Toast.LENGTH_SHORT).show()
@@ -422,15 +449,14 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         })
     }
 
-    private fun scheduleTaskAlarm(taskName: String, dueDate: Long?) {
+    private fun scheduleTaskAlarm(taskId: Int, taskName: String, dueDate: Long?) {
         if (dueDate == null) return
         val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(requireContext(), TaskAlarmReceiver::class.java).apply {
             putExtra("TASK_NAME", taskName)
         }
-        val requestCode = (System.currentTimeMillis() % 10000).toInt()
         val pendingIntent = PendingIntent.getBroadcast(
-            requireContext(), requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            requireContext(), taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         if (dueDate > System.currentTimeMillis()) {
@@ -444,6 +470,17 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, dueDate, pendingIntent)
             }
         }
+    }
+
+    private fun cancelTaskAlarm(taskId: Int, taskName: String) {
+        val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(requireContext(), TaskAlarmReceiver::class.java).apply {
+            putExtra("TASK_NAME", taskName)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            requireContext(), taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     override fun onDestroyView() {

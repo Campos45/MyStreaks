@@ -12,6 +12,9 @@ import pt.ipt.mystreaks.ui.main.MainActivity
 class StreakWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        // Forçar a re-leitura de dados pela fábrica do widget para ficar 100% atualizado
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widgetListView)
+
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_streak)
 

@@ -213,17 +213,110 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             formatToolbar.visibility = if (formatToolbar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        dialogView.findViewById<ImageButton>(R.id.btnBold).setOnClickListener { isBoldActive = !isBoldActive; updateButtonStates() }
-        dialogView.findViewById<ImageButton>(R.id.btnItalic).setOnClickListener { isItalicActive = !isItalicActive; updateButtonStates() }
-        dialogView.findViewById<View>(R.id.btnUnderline).setOnClickListener { isUnderlineActive = !isUnderlineActive; updateButtonStates() }
-        dialogView.findViewById<View>(R.id.btnTitle1).setOnClickListener { currentTextSizeFactor = 1.5f; updateButtonStates(); Toast.makeText(context, "Modo Título 1", Toast.LENGTH_SHORT).show() }
-        dialogView.findViewById<View>(R.id.btnTitle2).setOnClickListener { currentTextSizeFactor = 1.2f; updateButtonStates(); Toast.makeText(context, "Modo Título 2", Toast.LENGTH_SHORT).show() }
-        dialogView.findViewById<View>(R.id.btnNormalText).setOnClickListener { currentTextSizeFactor = 1.0f; updateButtonStates(); Toast.makeText(context, "Tamanho Normal", Toast.LENGTH_SHORT).show() }
+        dialogView.findViewById<ImageButton>(R.id.btnBold).setOnClickListener {
+            isBoldActive = !isBoldActive
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+        }
+        dialogView.findViewById<ImageButton>(R.id.btnItalic).setOnClickListener {
+            isItalicActive = !isItalicActive
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+        }
+        dialogView.findViewById<View>(R.id.btnUnderline).setOnClickListener {
+            isUnderlineActive = !isUnderlineActive
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(UnderlineSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+        }
+        dialogView.findViewById<View>(R.id.btnTitle1).setOnClickListener {
+            currentTextSizeFactor = 1.5f
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+            Toast.makeText(context, "Modo Título 1", Toast.LENGTH_SHORT).show()
+        }
+        dialogView.findViewById<View>(R.id.btnTitle2).setOnClickListener {
+            currentTextSizeFactor = 1.2f
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(RelativeSizeSpan(1.2f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+            Toast.makeText(context, "Modo Título 2", Toast.LENGTH_SHORT).show()
+        }
+        dialogView.findViewById<View>(R.id.btnNormalText).setOnClickListener {
+            currentTextSizeFactor = 1.0f
+            updateButtonStates()
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(RelativeSizeSpan(1.0f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+            Toast.makeText(context, "Tamanho Normal", Toast.LENGTH_SHORT).show()
+        }
 
         dialogView.findViewById<ImageButton>(R.id.btnClearFormat).setOnClickListener {
             isBoldActive = false; isItalicActive = false; isUnderlineActive = false; currentTextSizeFactor = 1.0f; currentTextColor = null
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    val spans = editable.getSpans(start, end, Object::class.java)
+                    for (span in spans) {
+                        if (span is StyleSpan || span is UnderlineSpan || span is RelativeSizeSpan || span is ForegroundColorSpan) {
+                            editable.removeSpan(span)
+                        }
+                    }
+                }
+            }
             updateButtonStates()
-            Toast.makeText(context, "Modo Texto Normal ativado", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Formatação limpa", Toast.LENGTH_SHORT).show()
+        }
+
+        fun applyColorToSelection(colorInt: Int) {
+            if (etListContent.hasSelection()) {
+                val start = etListContent.selectionStart
+                val end = etListContent.selectionEnd
+                val editable = etListContent.text
+                if (editable != null) {
+                    editable.setSpan(ForegroundColorSpan(colorInt), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
         }
 
         // --- CORRIGIDO: LIGAÇÃO DA COR DO TEXTO À PREVIEW ---
@@ -245,11 +338,15 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
 
                     MaterialAlertDialogBuilder(requireContext()).setView(pickerDialogView)
                         .setPositiveButton("OK") { _, _ ->
-                            currentTextColor = Color.parseColor(colorPicker.currentColorHex)
+                            val colorInt = Color.parseColor(colorPicker.currentColorHex)
+                            currentTextColor = colorInt
+                            applyColorToSelection(colorInt)
                             updateButtonStates()
                         }.show()
                 } else {
-                    currentTextColor = Color.parseColor(hexColors[which])
+                    val colorInt = Color.parseColor(hexColors[which])
+                    currentTextColor = colorInt
+                    applyColorToSelection(colorInt)
                     updateButtonStates()
                 }
             }.show()

@@ -14,6 +14,11 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     val completedTasks: LiveData<List<Task>> = repository.completedTasks.asLiveData()
 
     fun insert(task: Task) = viewModelScope.launch { repository.insert(task) }
+    
+    suspend fun insertAndGetId(task: Task): Long {
+        return repository.insert(task)
+    }
+
     fun update(task: Task) = viewModelScope.launch { repository.update(task) }
     fun delete(task: Task) = viewModelScope.launch { repository.delete(task) }
 }

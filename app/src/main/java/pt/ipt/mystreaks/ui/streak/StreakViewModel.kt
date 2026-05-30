@@ -18,6 +18,10 @@ class StreakViewModel(private val repository: StreakRepository) : ViewModel() {
         repository.insert(streak)
     }
 
+    suspend fun insertAndGetId(streak: Streak): Long {
+        return repository.insert(streak)
+    }
+
     fun update(streak: Streak) = viewModelScope.launch {
         repository.update(streak)
     }

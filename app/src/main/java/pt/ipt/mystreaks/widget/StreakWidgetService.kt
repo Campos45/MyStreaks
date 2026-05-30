@@ -27,7 +27,7 @@ class StreakWidgetFactory(private val context: Context) : RemoteViewsService.Rem
     override fun onDataSetChanged() {
         // Corre em modo "bloqueio" rápido porque os widgets precisam da resposta imediata
         runBlocking {
-            streaks = dao.getActiveStreaksList()
+            streaks = dao.getActiveStreaksList().map { it.toDynamicStreak() }
         }
     }
 

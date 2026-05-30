@@ -38,7 +38,7 @@ class MedalsActivity : AppCompatActivity() {
             val bestStreakName = bestStreak?.name
 
             val completedTasks = tasks.filter { it.isCompleted }
-            val totalTags = streaks.mapNotNull { it.tag }.distinct().size
+            val totalTags = database.tagDao().getAllTagsSyncList().size
 
             // Descobre as Tarefas notáveis
             val firstTaskName = completedTasks.minByOrNull { it.completionDate ?: Long.MAX_VALUE }?.name

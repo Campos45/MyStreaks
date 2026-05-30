@@ -44,6 +44,10 @@ class HexagonColorPickerView @JvmOverloads constructor(
     var onColorChangeListener: ((String) -> Unit)? = null
     var currentColorHex: String = "#FFFFFF"
 
+    private var sweepShader: Shader? = null
+    private var radialShader: Shader? = null
+    private val colorsArray = intArrayOf(Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA, Color.RED)
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         centerX = w / 2f
@@ -55,6 +59,17 @@ class HexagonColorPickerView @JvmOverloads constructor(
         selectorY = centerY
 
         createHexagon()
+
+        // Cachear os Shaders para evitar alocações repetidas no onDraw
+        sweepShader = SweepGradient(centerX, centerY, colorsArray, null)
+        radialShader = RadialGradient(
+            centerX,
+            centerY,
+            radius,
+            Color.WHITE,
+            Color.TRANSPARENT,
+            Shader.TileMode.CLAMP
+        )
     }
 
     // Desenha as 6 pontas do Hexágono
@@ -75,20 +90,12 @@ class HexagonColorPickerView @JvmOverloads constructor(
         // 1. Cortar o ecrã com a máscara do Hexágono! Tudo o que for pintado agora fica lá dentro.
         canvas.clipPath(path)
 
-        // 2. Pintar o Espectro de Cores (Roda do Arco-Íris)
-        val colors = intArrayOf(Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA, Color.RED)
-        paint.shader = SweepGradient(centerX, centerY, colors, null)
+        // 2. Pintar o Espectro de Cores (Roda do Arco-Íris) usando o Shader em cache
+        paint.shader = sweepShader
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
-        // 3. Pintar a Luz no Centro (Branco no meio que desaparece nas pontas)
-        paint.shader = RadialGradient(
-            centerX,
-            centerY,
-            radius,
-            Color.WHITE,
-            Color.TRANSPARENT,
-            Shader.TileMode.CLAMP
-        )
+        // 3. Pintar a Luz no Centro usando o Shader em cache
+        paint.shader = radialShader
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
         // 4. Desenhar o anel/mira onde o dedo está

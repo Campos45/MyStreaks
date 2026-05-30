@@ -34,7 +34,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
                                 putExtra("TASK_NAME", task.name)
                             }
                             val pendingIntent = PendingIntent.getBroadcast(
-                                context, task.name.hashCode(), alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                                context, task.id, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                             )
                             try {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

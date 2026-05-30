@@ -19,6 +19,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -60,6 +64,7 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
     private lateinit var adapter: StreakAdapter
     private var currentTagFilter: String? = null
     private var currentSearchQuery: String = ""
+    private var hasCheckedAutoReset = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -81,7 +86,6 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
 
         adapter = StreakAdapter(
             onStreakCheckChanged = { streak, isChecked ->
-                if (streak.isCompleted == isChecked) return@StreakAdapter
                 if (isShowingArchive) {
                     Toast.makeText(
                         requireContext(),
@@ -91,68 +95,21 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                     return@StreakAdapter
                 }
 
-                // API MODERNA: Pega no dia de hoje à meia-noite exata
-                val todayLd = LocalDate.now()
-                val todayMidnight =
-                    todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
+                val todayMidnight = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val updatedDates = streak.completedDates.toMutableList()
-                var newCount = streak.count
 
                 if (isChecked) {
                     if (!updatedDates.contains(todayMidnight)) {
-                        val alreadyGotPointThisPeriod = updatedDates.any { pastDate ->
-                            val pastDateLd =
-                                Instant.ofEpochMilli(pastDate).atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            when (streak.type) {
-                                "D" -> false
-                                "S" -> ChronoUnit.WEEKS.between(
-                                    pastDateLd.with(DayOfWeek.MONDAY),
-                                    todayLd.with(DayOfWeek.MONDAY)
-                                ) == 0L
-
-                                "M" -> ChronoUnit.MONTHS.between(
-                                    pastDateLd.withDayOfMonth(1),
-                                    todayLd.withDayOfMonth(1)
-                                ) == 0L
-
-                                else -> false
-                            }
-                        }
-                        if (!alreadyGotPointThisPeriod) newCount++
                         updatedDates.add(todayMidnight)
                     }
                 } else {
                     updatedDates.remove(todayMidnight)
-                    val hasOtherCompletionsThisPeriod = updatedDates.any { pastDate ->
-                        val pastDateLd =
-                            Instant.ofEpochMilli(pastDate).atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                        when (streak.type) {
-                            "D" -> false
-                            "S" -> ChronoUnit.WEEKS.between(
-                                pastDateLd.with(DayOfWeek.MONDAY),
-                                todayLd.with(DayOfWeek.MONDAY)
-                            ) == 0L
-
-                            "M" -> ChronoUnit.MONTHS.between(
-                                pastDateLd.withDayOfMonth(1),
-                                todayLd.withDayOfMonth(1)
-                            ) == 0L
-
-                            else -> false
-                        }
-                    }
-                    if (!hasOtherCompletionsThisPeriod && newCount > 0) newCount--
                 }
 
+                // O model dinâmico no repositório vai calcular count e isCompleted automaticamente!
                 viewModel.update(
                     streak.copy(
-                        count = newCount,
-                        isCompleted = isChecked,
-                        completedDates = updatedDates,
-                        currentStartDate = if (newCount == 1 && streak.count == 0) System.currentTimeMillis() else streak.currentStartDate
+                        completedDates = updatedDates
                     )
                 )
 
@@ -162,8 +119,19 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             },
             onHistoryClicked = { showStreakHistoryDialog(it) },
             onEditClicked = { showAddStreakDialog(it) },
-            onArchiveClicked = { viewModel.update(it.copy(isArchived = !isShowingArchive)) },
-            onDeleteClicked = { viewModel.delete(it) }
+            onArchiveClicked = { streak ->
+                val targetArchived = !isShowingArchive
+                viewModel.update(streak.copy(isArchived = targetArchived))
+                if (targetArchived) {
+                    cancelStreakAlarm(streak.id)
+                } else if (streak.remindHour != null && streak.remindMinute != null) {
+                    scheduleStreakAlarm(streak.id, streak.remindHour!!, streak.remindMinute!!)
+                }
+            },
+            onDeleteClicked = { streak ->
+                viewModel.delete(streak)
+                cancelStreakAlarm(streak.id)
+            }
         )
 
         binding.recyclerViewStreaks.adapter = adapter
@@ -176,29 +144,36 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         viewModel.activeStreaks.observe(viewLifecycleOwner) { streaks ->
             activeList = streaks ?: emptyList()
 
-            // --- INÍCIO DO GUARDA-COSTAS (AUTO-RESET) ---
-            val todayLd = LocalDate.now()
+            // --- INÍCIO DO GUARDA-COSTAS (AUTO-RESET OTIMIZADO) ---
+            if (!hasCheckedAutoReset && activeList.isNotEmpty()) {
+                hasCheckedAutoReset = true
+                val todayLd = LocalDate.now()
+                val expiredStreaksToUpdate = mutableListOf<Streak>()
 
-            activeList.forEach { streak ->
-                // Só vale a pena verificar se a streak tiver count > 0 e já tiver sido feita alguma vez
-                if (streak.count > 0 && streak.completedDates.isNotEmpty()) {
-                    val lastDateMillis = streak.completedDates.maxOrNull() ?: 0L
+                activeList.forEach { streak ->
+                    if (streak.count > 0 && streak.completedDates.isNotEmpty()) {
+                        val lastDateMillis = streak.completedDates.maxOrNull() ?: 0L
 
-                    if (lastDateMillis > 0L) {
-                        val lastDateLd = Instant.ofEpochMilli(lastDateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        if (lastDateMillis > 0L) {
+                            val lastDateLd = Instant.ofEpochMilli(lastDateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
 
-                        // A Lógica Implacável do Tempo
-                        val isExpired = when (streak.type) {
-                            "D" -> ChronoUnit.DAYS.between(lastDateLd, todayLd) > 1
-                            "S" -> ChronoUnit.WEEKS.between(lastDateLd.with(DayOfWeek.MONDAY), todayLd.with(DayOfWeek.MONDAY)) > 1
-                            "M" -> ChronoUnit.MONTHS.between(lastDateLd.withDayOfMonth(1), todayLd.withDayOfMonth(1)) > 1
-                            else -> false
+                            val isExpired = when (streak.type) {
+                                "D" -> ChronoUnit.DAYS.between(lastDateLd, todayLd) > 1
+                                "S" -> ChronoUnit.WEEKS.between(lastDateLd.with(DayOfWeek.MONDAY), todayLd.with(DayOfWeek.MONDAY)) > 1
+                                "M" -> ChronoUnit.MONTHS.between(lastDateLd.withDayOfMonth(1), todayLd.withDayOfMonth(1)) > 1
+                                else -> false
+                            }
+
+                            if (isExpired) {
+                                expiredStreaksToUpdate.add(streak.copy(count = 0))
+                            }
                         }
+                    }
+                }
 
-                        // Se o prazo expirou, reset ao contador para 0 (mantendo o histórico do calendário intacto!)
-                        if (isExpired) {
-                            viewModel.update(streak.copy(count = 0))
-                        }
+                if (expiredStreaksToUpdate.isNotEmpty()) {
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        database.streakDao().updateAll(expiredStreaksToUpdate)
                     }
                 }
             }
@@ -320,40 +295,20 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                     if (isEditing) {
                         viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag, remindHour = finalHour, remindMinute = finalMinute))
                         Toast.makeText(requireContext(), "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        // Atenção: type = "D" assume que é Diária. Podes querer ajustar isto se tiveres RadioButtons de Tipo!
-                        viewModel.insert(Streak(name = name, tag = finalTag, type = "D", remindHour = finalHour, remindMinute = finalMinute))
-                    }
-
-                    // --- 3. CRIAR/CANCELAR O ALARME NO ANDROID ---
-                    val alarmManager = requireContext().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
-                    val intent = android.content.Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
-                        putExtra("STREAK_NAME", name)
-                    }
-                    val pendingIntent = android.app.PendingIntent.getBroadcast(
-                        requireContext(), name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                    )
-
-                    if (finalHour != null && finalMinute != null) {
-                        val cal = java.util.Calendar.getInstance().apply {
-                            set(java.util.Calendar.HOUR_OF_DAY, finalHour)
-                            set(java.util.Calendar.MINUTE, finalMinute)
-                            set(java.util.Calendar.SECOND, 0)
-                            if (before(java.util.Calendar.getInstance())) add(java.util.Calendar.DATE, 1)
+                        cancelStreakAlarm(streakToEdit.id)
+                        if (finalHour != null && finalMinute != null) {
+                            scheduleStreakAlarm(streakToEdit.id, finalHour, finalMinute)
                         }
-
-                        // A FORÇA BRUTA: Fura o Modo de Bateria do Android
-                        try {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
-                            } else {
-                                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                    } else {
+                        val newStreak = Streak(name = name, tag = finalTag, type = "D", remindHour = finalHour, remindMinute = finalMinute)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val newId = withContext(Dispatchers.IO) {
+                                viewModel.insertAndGetId(newStreak)
                             }
-                        } catch (e: SecurityException) {
-                            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                            if (finalHour != null && finalMinute != null) {
+                                scheduleStreakAlarm(newId.toInt(), finalHour, finalMinute)
+                            }
                         }
-                    } else {
-                        alarmManager.cancel(pendingIntent)
                     }
                 }
             }.show()
@@ -440,6 +395,45 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             .setView(dialogView)
             .setPositiveButton("Fechar", null)
             .show()
+    }
+
+    private fun scheduleStreakAlarm(streakId: Int, hour: Int, minute: Int) {
+        val alarmManager = requireContext().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = android.content.Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
+            putExtra("STREAK_ID", streakId)
+        }
+        val pendingIntent = android.app.PendingIntent.getBroadcast(
+            requireContext(), streakId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, hour)
+            set(java.util.Calendar.MINUTE, minute)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+            if (before(java.util.Calendar.getInstance())) add(java.util.Calendar.DATE, 1)
+        }
+
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+            } else {
+                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+            }
+        } catch (e: SecurityException) {
+            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+        }
+    }
+
+    private fun cancelStreakAlarm(streakId: Int) {
+        val alarmManager = requireContext().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = android.content.Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
+            putExtra("STREAK_ID", streakId)
+        }
+        val pendingIntent = android.app.PendingIntent.getBroadcast(
+            requireContext(), streakId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }

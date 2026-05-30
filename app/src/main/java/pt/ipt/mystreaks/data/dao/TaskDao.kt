@@ -12,7 +12,7 @@ import pt.ipt.mystreaks.data.model.Task
 @Dao
 interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(task: Task)
+    suspend fun insert(task: Task): Long
 
     @Update
     suspend fun update(task: Task)
