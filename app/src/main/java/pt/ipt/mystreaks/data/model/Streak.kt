@@ -39,11 +39,17 @@ data class Streak(
         if (completedDates.isEmpty()) return 0
 
         val todayLd = LocalDate.now()
-        val sortedDates = completedDates.map {
-            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        val distinctPeriods = completedDates.map {
+            val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+            when (type) {
+                "S" -> date.with(DayOfWeek.MONDAY)
+                "M" -> date.withDayOfMonth(1)
+                else -> date
+            }
         }.distinct().sortedDescending() // Mais recente primeiro
 
-        val latestCompletion = sortedDates.first()
+        if (distinctPeriods.isEmpty()) return 0
+        val latestCompletion = distinctPeriods.first()
 
         val expectedStart = when (type) {
             "D" -> {
@@ -53,20 +59,18 @@ data class Streak(
                 if (latestCompletion == todayLd) todayLd else todayLd.minusDays(1)
             }
             "S" -> {
-                val latestMon = latestCompletion.with(DayOfWeek.MONDAY)
                 val todayMon = todayLd.with(DayOfWeek.MONDAY)
-                if (ChronoUnit.WEEKS.between(latestMon, todayMon) > 1) {
+                if (ChronoUnit.WEEKS.between(latestCompletion, todayMon) > 1) {
                     return 0 // quebrou!
                 }
-                if (latestMon == todayMon) todayMon else todayMon.minusWeeks(1)
+                if (latestCompletion == todayMon) todayMon else todayMon.minusWeeks(1)
             }
             "M" -> {
-                val latestMonthStart = latestCompletion.withDayOfMonth(1)
                 val todayMonthStart = todayLd.withDayOfMonth(1)
-                if (ChronoUnit.MONTHS.between(latestMonthStart, todayMonthStart) > 1) {
+                if (ChronoUnit.MONTHS.between(latestCompletion, todayMonthStart) > 1) {
                     return 0 // quebrou!
                 }
-                if (latestMonthStart == todayMonthStart) todayMonthStart else todayMonthStart.minusMonths(1)
+                if (latestCompletion == todayMonthStart) todayMonthStart else todayMonthStart.minusMonths(1)
             }
             else -> todayLd
         }
@@ -74,14 +78,8 @@ data class Streak(
         var countCalc = 0
         var currentDate = expectedStart
 
-        for (date in sortedDates) {
-            val matches = when (type) {
-                "D" -> date == currentDate
-                "S" -> date.with(DayOfWeek.MONDAY) == currentDate.with(DayOfWeek.MONDAY)
-                "M" -> date.withDayOfMonth(1) == currentDate.withDayOfMonth(1)
-                else -> false
-            }
-            if (matches) {
+        for (periodDate in distinctPeriods) {
+            if (periodDate == currentDate) {
                 countCalc++
                 currentDate = when (type) {
                     "D" -> currentDate.minusDays(1)

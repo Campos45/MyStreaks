@@ -29,7 +29,7 @@ class MedalsActivity : AppCompatActivity() {
 
     private fun calculateMedals() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val streaks = database.streakDao().getAllStreaksSync()
+            val streaks = database.streakDao().getAllStreaksSync().map { it.toDynamicStreak() }
             val tasks = database.taskDao().getAllTasksSync()
 
             // Descobre o Recorde Máximo e qual foi a Streak que o atingiu
@@ -58,7 +58,7 @@ class MedalsActivity : AppCompatActivity() {
                     val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
 
                     if (hour < 8 && !hasMadrugador) { hasMadrugador = true; madrugadorName = task.name }
-                    if (hour == 23 && !hasCoruja) { hasCoruja = true; corujaName = task.name }
+                    if (hour >= 22 && !hasCoruja) { hasCoruja = true; corujaName = task.name }
                     if ((dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) && !hasFimDeSemana) {
                         hasFimDeSemana = true; fdsName = task.name
                     }

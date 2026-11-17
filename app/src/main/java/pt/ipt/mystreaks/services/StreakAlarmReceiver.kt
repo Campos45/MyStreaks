@@ -54,8 +54,7 @@ class StreakAlarmReceiver : BroadcastReceiver() {
                 val streak = database.streakDao().getStreakById(streakId)
 
                 if (streak != null && !streak.isArchived) {
-                    val todayMidnight = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    val isCompletedToday = streak.completedDates.contains(todayMidnight)
+                    val isCompletedToday = streak.isCompletedToday()
 
                     if (!isCompletedToday) {
                         sendNotification(context, streak)

@@ -36,9 +36,8 @@ class EditTextUndoRedo(private val editText: EditText) {
         history.add(SpannableStringBuilder(editText.text))
         if (history.size > 30) {
             history.removeAt(0)
-        } else {
-            historyIndex = history.size - 1
         }
+        historyIndex = history.size - 1
     }
 
     fun undo() {

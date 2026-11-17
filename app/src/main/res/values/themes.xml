@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.MyStreaks" parent="Theme.Material3.Light.NoActionBar">
 
@@ -14,7 +15,4 @@
         <item name="android:textColorHint">#757575</item>
 
     </style>
-
-    <color name="purple_500">#8B16B6</color>
-    <color name="orange">#E18D11</color>
 </resources>

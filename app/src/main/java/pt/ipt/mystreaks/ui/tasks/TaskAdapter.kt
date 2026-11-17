@@ -126,8 +126,11 @@ class TaskAdapter(
                 binding.ivExpand.rotation = if (isExpanded) 180f else 0f
 
                 binding.ivExpand.setOnClickListener {
-                    if (expandedTasks.contains(task.id)) expandedTasks.remove(task.id) else expandedTasks.add(task.id)
-                    notifyItemChanged(adapterPosition)
+                    val pos = layoutPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        if (expandedTasks.contains(task.id)) expandedTasks.remove(task.id) else expandedTasks.add(task.id)
+                        notifyItemChanged(pos)
+                    }
                 }
 
                 val currentChildCount = binding.layoutSubTasks.childCount

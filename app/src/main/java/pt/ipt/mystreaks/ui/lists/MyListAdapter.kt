@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.graphics.ColorUtils
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.DiffUtil
@@ -39,6 +40,7 @@ class MyListAdapter(
     }
 
     inner class MyListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val cardView: MaterialCardView = itemView as MaterialCardView
         private val tvListName: TextView = itemView.findViewById(R.id.tvListName)
         private val tvTag: TextView = itemView.findViewById(R.id.tvTag)
         private val tvListContent: TextView = itemView.findViewById(R.id.tvListContent)
@@ -50,21 +52,33 @@ class MyListAdapter(
             // Só mostramos o Pin se estiver afixada (e não mostramos no arquivo)
             ivPinned.visibility = if (myList.isPinned && !myList.isArchived) View.VISIBLE else View.GONE
 
-            try {
-                tvListContent.text = HtmlCompat.fromHtml(myList.content, HtmlCompat.FROM_HTML_MODE_COMPACT)
-            } catch (e: Exception) {
-                tvListContent.text = myList.content
+            val rawContent = myList.content
+            if (rawContent.isNotBlank()) {
+                tvListContent.visibility = View.VISIBLE
+                try {
+                    tvListContent.text = HtmlCompat.fromHtml(rawContent, HtmlCompat.FROM_HTML_MODE_COMPACT)
+                } catch (e: Exception) {
+                    tvListContent.text = rawContent
+                }
+            } else {
+                tvListContent.visibility = View.GONE
             }
 
             if (!myList.tag.isNullOrBlank()) {
                 tvTag.visibility = View.VISIBLE
                 val cleanName = myList.tag!!.trim()
                 tvTag.text = cleanName
-                val tagEncontrada = tagsList.find { it.name.replace("\\s+".toRegex(), "").equals(cleanName.replace("\\s+".toRegex(), ""), ignoreCase = true) }
+                val tagEncontrada = tagsList.find {
+                    it.name.replace("\\s+".toRegex(), "").equals(cleanName.replace("\\s+".toRegex(), ""), ignoreCase = true)
+                }
                 val finalHex = tagEncontrada?.color ?: "#757575"
                 try {
                     val colorInt = Color.parseColor(finalHex)
-                    val shape = GradientDrawable().apply { shape = GradientDrawable.RECTANGLE; cornerRadius = 32f; setColor(colorInt) }
+                    val shape = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 32f
+                        setColor(colorInt)
+                    }
                     tvTag.background = shape
                     ViewCompat.setBackgroundTintList(tvTag, ColorStateList.valueOf(colorInt))
                     tvTag.setTextColor(Color.WHITE)
@@ -75,10 +89,34 @@ class MyListAdapter(
                 tvTag.visibility = View.GONE
             }
 
-            val bgColor = myList.backgroundColor ?: "#FFFFFF"
-            (itemView as MaterialCardView).setCardBackgroundColor(Color.parseColor(bgColor))
+            // --- CONTRASTE INTELIGENTE DA NOTA ---
+            val bgColorHex = myList.backgroundColor ?: "#FFFFFF"
+            val bgColorInt = try {
+                Color.parseColor(bgColorHex)
+            } catch (e: Exception) {
+                Color.WHITE
+            }
+            cardView.setCardBackgroundColor(bgColorInt)
 
-            // Clique abre o menu de edição (onde vão estar os botões de apagar/arquivar!)
+            val luminance = ColorUtils.calculateLuminance(bgColorInt)
+            val isDark = luminance < 0.45
+
+            if (isDark) {
+                tvListName.setTextColor(Color.WHITE)
+                tvListContent.setTextColor(Color.parseColor("#E5E7EB"))
+                ivPinned.imageTintList = ColorStateList.valueOf(Color.parseColor("#FFCA28"))
+                cardView.strokeWidth = 0
+            } else {
+                tvListName.setTextColor(Color.parseColor("#1F2937"))
+                tvListContent.setTextColor(Color.parseColor("#4B5563"))
+                ivPinned.imageTintList = ColorStateList.valueOf(Color.parseColor("#FF6D00"))
+                // Borda suave apenas em fundos claros/brancos
+                val isNearWhite = luminance > 0.85
+                cardView.strokeWidth = if (isNearWhite) 2 else 0
+                cardView.strokeColor = Color.parseColor("#14000000")
+            }
+
+            // Clique abre o menu de edição
             itemView.setOnClickListener { onEditClicked(myList) }
         }
     }

@@ -102,7 +102,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
                     // Reagendar Tarefas
                     backup.tasks?.forEach { task ->
-                        // FIX: Criar uma variável local imutável (val) para o Kotlin confiar
                         val safeDueDate = task.dueDate
 
                         if (!task.isCompleted && !task.isArchived && safeDueDate != null && safeDueDate > System.currentTimeMillis()) {
@@ -110,7 +109,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                                 putExtra("TASK_NAME", task.name)
                             }
                             val pendingIntent = android.app.PendingIntent.getBroadcast(
-                                requireContext(), task.name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                                requireContext(), task.id, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                             )
                             try {
                                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -131,10 +130,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
                         if (!streak.isArchived && safeHour != null && safeMinute != null) {
                             val intent = Intent(requireContext(), pt.ipt.mystreaks.services.StreakAlarmReceiver::class.java).apply {
-                                putExtra("STREAK_NAME", streak.name)
+                                putExtra("STREAK_ID", streak.id)
                             }
                             val pendingIntent = android.app.PendingIntent.getBroadcast(
-                                requireContext(), streak.name.hashCode(), intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                                requireContext(), streak.id, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                             )
 
                             val cal = java.util.Calendar.getInstance().apply {

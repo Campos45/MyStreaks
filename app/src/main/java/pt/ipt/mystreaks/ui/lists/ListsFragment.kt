@@ -18,12 +18,14 @@ import android.widget.AutoCompleteTextView
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import pt.ipt.mystreaks.utils.EditTextUndoRedo
 import pt.ipt.mystreaks.utils.HexagonColorPickerView
@@ -65,7 +67,9 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         )
 
         binding.recyclerViewLists.adapter = adapter
-        binding.recyclerViewLists.layoutManager = GridLayoutManager(requireContext(), 2)
+        binding.recyclerViewLists.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL).apply {
+            gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
+        }
 
         tagViewModel.allTags.observe(viewLifecycleOwner) { allTags ->
             adapter.setTags(allTags.filter { it.type == "L" })
@@ -77,7 +81,8 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         binding.toggleGroupLists.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 isShowingArchive = checkedId == R.id.btnArchivedLists
-                if (isShowingArchive) updateUI(viewModel.archivedLists.value) else updateUI(viewModel.activeLists.value)
+                val targetList = if (isShowingArchive) viewModel.archivedLists.value else viewModel.activeLists.value
+                updateUI(targetList ?: emptyList())
             }
         }
 
@@ -94,7 +99,8 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 currentSearchQuery = s.toString()
-                if (isShowingArchive) updateUI(viewModel.archivedLists.value) else updateUI(viewModel.activeLists.value)
+                val targetList = if (isShowingArchive) viewModel.archivedLists.value else viewModel.activeLists.value
+                updateUI(targetList ?: emptyList())
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -105,26 +111,32 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 Toast.makeText(requireContext(), "Ainda não tens categorias nas listas.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val options = arrayOf("🌟 Todas as Categorias", "🚫 Sem Categoria") + listTags.map { it.name }.toTypedArray()
+            val filterOptions = mutableListOf("🌟 Todas", "🚫 Sem Categoria")
+            filterOptions.addAll(listTags.map { it.name })
 
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Filtrar por Categoria")
-                .setItems(options) { _, which ->
+                .setItems(filterOptions.toTypedArray()) { _, which ->
                     currentTagFilter = when (which) {
                         0 -> "ALL"
                         1 -> "NONE"
-                        else -> options[which]
+                        else -> filterOptions[which]
                     }
-                    if (isShowingArchive) updateUI(viewModel.archivedLists.value) else updateUI(viewModel.activeLists.value)
-                }.show()
+                    val targetList = if (isShowingArchive) viewModel.archivedLists.value else viewModel.activeLists.value
+                    updateUI(targetList ?: emptyList())
+                }
+                .show()
         }
     }
 
     private fun updateUI(lists: List<MyList>?) {
-        val safeLists = lists ?: emptyList()
+        val safeList = lists ?: emptyList()
 
-        val filteredLists = safeLists.filter { list ->
-            val matchesSearch = currentSearchQuery.isEmpty() || list.name.contains(currentSearchQuery, ignoreCase = true)
+        val filteredLists = safeList.filter { list ->
+            val matchesSearch = currentSearchQuery.isEmpty() ||
+                    list.name.contains(currentSearchQuery, ignoreCase = true) ||
+                    list.content.contains(currentSearchQuery, ignoreCase = true)
+
             val matchesTag = when (currentTagFilter) {
                 "ALL" -> true
                 "NONE" -> list.tag.isNullOrBlank()
@@ -137,6 +149,23 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
 
         binding.recyclerViewLists.visibility = if (filteredLists.isEmpty()) View.GONE else View.VISIBLE
         binding.layoutEmptyState.visibility = if (filteredLists.isEmpty()) View.VISIBLE else View.GONE
+
+        // Empty state contextual e elegante
+        if (filteredLists.isEmpty()) {
+            if (currentSearchQuery.isNotEmpty()) {
+                binding.tvEmptyEmoji.text = "🔍"
+                binding.tvEmptyTitle.text = "Nenhum resultado"
+                binding.tvEmptyDesc.text = "Não encontramos notas para '$currentSearchQuery'"
+            } else if (isShowingArchive) {
+                binding.tvEmptyEmoji.text = "📁"
+                binding.tvEmptyTitle.text = "Arquivo Vazio"
+                binding.tvEmptyDesc.text = "As notas que arquivares vão aparecer aqui."
+            } else {
+                binding.tvEmptyEmoji.text = "📝"
+                binding.tvEmptyTitle.text = "Sem Notas"
+                binding.tvEmptyDesc.text = "Clica no botão para criares a tua primeira nota!"
+            }
+        }
 
         if (isShowingArchive) binding.fabAddList.hide() else binding.fabAddList.show()
     }
@@ -155,10 +184,6 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
 
         etTag.setTextColor(Color.BLACK)
         etTag.setHintTextColor(Color.DKGRAY)
-
-        if (listToEdit == null) {
-            dialogView.setBackgroundColor(Color.WHITE)
-        }
 
         val btnPin = dialogView.findViewById<ImageButton>(R.id.btnPin)
         val btnArchiveList = dialogView.findViewById<ImageButton>(R.id.btnArchiveList)
@@ -185,10 +210,21 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
         var currentTextColor: Int? = null
 
         fun updateButtonStates() {
-            dialogView.findViewById<ImageButton>(R.id.btnBold).apply { alpha = if (isBoldActive) 1f else 0.4f; setBackgroundColor(if (isBoldActive) Color.LTGRAY else Color.TRANSPARENT) }
-            dialogView.findViewById<ImageButton>(R.id.btnItalic).apply { alpha = if (isItalicActive) 1f else 0.4f; setBackgroundColor(if (isItalicActive) Color.LTGRAY else Color.TRANSPARENT) }
-            dialogView.findViewById<View>(R.id.btnUnderline).apply { alpha = if (isUnderlineActive) 1f else 0.4f; setBackgroundColor(if (isUnderlineActive) Color.LTGRAY else Color.TRANSPARENT) }
-            dialogView.findViewById<ImageButton>(R.id.btnTextColor).apply { imageTintList = if (currentTextColor != null) ColorStateList.valueOf(currentTextColor!!) else ColorStateList.valueOf(Color.BLACK) }
+            dialogView.findViewById<ImageButton>(R.id.btnBold).apply {
+                alpha = if (isBoldActive) 1f else 0.45f
+                setBackgroundColor(if (isBoldActive) Color.parseColor("#E0E0E0") else Color.TRANSPARENT)
+            }
+            dialogView.findViewById<ImageButton>(R.id.btnItalic).apply {
+                alpha = if (isItalicActive) 1f else 0.45f
+                setBackgroundColor(if (isItalicActive) Color.parseColor("#E0E0E0") else Color.TRANSPARENT)
+            }
+            dialogView.findViewById<ImageButton>(R.id.btnUnderline).apply {
+                alpha = if (isUnderlineActive) 1f else 0.45f
+                setBackgroundColor(if (isUnderlineActive) Color.parseColor("#E0E0E0") else Color.TRANSPARENT)
+            }
+            dialogView.findViewById<ImageButton>(R.id.btnTextColor).apply {
+                imageTintList = if (currentTextColor != null) ColorStateList.valueOf(currentTextColor!!) else ColorStateList.valueOf(Color.BLACK)
+            }
         }
         updateButtonStates()
 
@@ -225,6 +261,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 }
             }
         }
+
         dialogView.findViewById<ImageButton>(R.id.btnItalic).setOnClickListener {
             isItalicActive = !isItalicActive
             updateButtonStates()
@@ -237,7 +274,8 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 }
             }
         }
-        dialogView.findViewById<View>(R.id.btnUnderline).setOnClickListener {
+
+        dialogView.findViewById<ImageButton>(R.id.btnUnderline).setOnClickListener {
             isUnderlineActive = !isUnderlineActive
             updateButtonStates()
             if (etListContent.hasSelection()) {
@@ -249,19 +287,20 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 }
             }
         }
+
         dialogView.findViewById<View>(R.id.btnTitle1).setOnClickListener {
-            currentTextSizeFactor = 1.5f
+            currentTextSizeFactor = 1.4f
             updateButtonStates()
             if (etListContent.hasSelection()) {
                 val start = etListContent.selectionStart
                 val end = etListContent.selectionEnd
                 val editable = etListContent.text
                 if (editable != null) {
-                    editable.setSpan(RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    editable.setSpan(RelativeSizeSpan(1.4f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             }
-            Toast.makeText(context, "Modo Título 1", Toast.LENGTH_SHORT).show()
         }
+
         dialogView.findViewById<View>(R.id.btnTitle2).setOnClickListener {
             currentTextSizeFactor = 1.2f
             updateButtonStates()
@@ -273,8 +312,8 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                     editable.setSpan(RelativeSizeSpan(1.2f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             }
-            Toast.makeText(context, "Modo Título 2", Toast.LENGTH_SHORT).show()
         }
+
         dialogView.findViewById<View>(R.id.btnNormalText).setOnClickListener {
             currentTextSizeFactor = 1.0f
             updateButtonStates()
@@ -286,11 +325,14 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                     editable.setSpan(RelativeSizeSpan(1.0f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             }
-            Toast.makeText(context, "Tamanho Normal", Toast.LENGTH_SHORT).show()
         }
 
         dialogView.findViewById<ImageButton>(R.id.btnClearFormat).setOnClickListener {
-            isBoldActive = false; isItalicActive = false; isUnderlineActive = false; currentTextSizeFactor = 1.0f; currentTextColor = null
+            isBoldActive = false
+            isItalicActive = false
+            isUnderlineActive = false
+            currentTextSizeFactor = 1.0f
+            currentTextColor = null
             if (etListContent.hasSelection()) {
                 val start = etListContent.selectionStart
                 val end = etListContent.selectionEnd
@@ -305,7 +347,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                 }
             }
             updateButtonStates()
-            Toast.makeText(context, "Formatação limpa", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Formatação reposta", Toast.LENGTH_SHORT).show()
         }
 
         fun applyColorToSelection(colorInt: Int) {
@@ -319,72 +361,94 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             }
         }
 
-        // --- CORRIGIDO: LIGAÇÃO DA COR DO TEXTO À PREVIEW ---
         dialogView.findViewById<ImageButton>(R.id.btnTextColor).setOnClickListener {
-            val colors = arrayOf("Azul", "Verde", "Vermelho", "Amarelo", "Preto", "Outra...")
-            val hexColors = arrayOf("#2196F3", "#4CAF50", "#F44336", "#FFEB3B", "#000000")
-            MaterialAlertDialogBuilder(requireContext()).setTitle("Escolher Cor").setItems(colors) { _, which ->
-                if (which == 5) {
-                    val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
-                    val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
-                    val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
-                    val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+            val colors = arrayOf("Azul", "Verde", "Vermelho", "Laranja", "Preto", "Personalizada...")
+            val hexColors = arrayOf("#2196F3", "#4CAF50", "#F44336", "#FF9800", "#000000")
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Cor do Texto")
+                .setItems(colors) { _, which ->
+                    if (which == colors.size - 1) {
+                        val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
+                        val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
+                        val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
+                        val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
 
-                    // A MAGIA: Ligar o Hexágono ao Ecrã de Preview!
-                    colorPicker.onColorChangeListener = { hex ->
-                        cardPreview.setCardBackgroundColor(Color.parseColor(hex))
-                        tvHex.text = hex
+                        colorPicker.onColorChangeListener = { hex ->
+                            cardPreview.setCardBackgroundColor(Color.parseColor(hex))
+                            tvHex.text = hex
+                        }
+
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setView(pickerDialogView)
+                            .setPositiveButton("OK") { _, _ ->
+                                val colorInt = Color.parseColor(colorPicker.currentColorHex)
+                                currentTextColor = colorInt
+                                applyColorToSelection(colorInt)
+                                updateButtonStates()
+                            }.show()
+                    } else {
+                        val colorInt = Color.parseColor(hexColors[which])
+                        currentTextColor = colorInt
+                        applyColorToSelection(colorInt)
+                        updateButtonStates()
                     }
-
-                    MaterialAlertDialogBuilder(requireContext()).setView(pickerDialogView)
-                        .setPositiveButton("OK") { _, _ ->
-                            val colorInt = Color.parseColor(colorPicker.currentColorHex)
-                            currentTextColor = colorInt
-                            applyColorToSelection(colorInt)
-                            updateButtonStates()
-                        }.show()
-                } else {
-                    val colorInt = Color.parseColor(hexColors[which])
-                    currentTextColor = colorInt
-                    applyColorToSelection(colorInt)
-                    updateButtonStates()
-                }
-            }.show()
+                }.show()
         }
 
-        // --- CORRIGIDO: LIGAÇÃO DA COR DE FUNDO À PREVIEW ---
+        // --- PALETA MODERNA ESTILO KEEP / NOTION ---
         dialogView.findViewById<ImageButton>(R.id.btnBgColor).setOnClickListener {
-            val colors = arrayOf("Azul Claro", "Verde Claro", "Rosa", "Amarelo", "Branco", "Outra...")
-            val hexColors = arrayOf("#E3F2FD", "#E8F5E9", "#FFEBEE", "#FFF9C4", "#FFFFFF")
-            MaterialAlertDialogBuilder(requireContext()).setTitle("Cor de Fundo").setItems(colors) { _, which ->
-                if (which == 5) {
-                    val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
-                    val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
-                    val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
-                    val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+            val colorLabels = arrayOf(
+                "⚪ Branco Puro",
+                "🌾 Areia Suave",
+                "🌿 Menta Fresco",
+                "🔮 Lavanda Delicado",
+                "🌊 Céu Pastel",
+                "🍑 Pêssego",
+                "🩶 Grafite Moderno",
+                "🎨 Personalizada..."
+            )
+            val hexColors = arrayOf("#FFFFFF", "#FFFBEB", "#ECFDF5", "#F3E8FF", "#F0F9FF", "#FFF7ED", "#2D3748")
 
-                    // A MAGIA: Ligar o Hexágono ao Ecrã de Preview!
-                    colorPicker.onColorChangeListener = { hex ->
-                        cardPreview.setCardBackgroundColor(Color.parseColor(hex))
-                        tvHex.text = hex
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Cor de Fundo da Nota")
+                .setItems(colorLabels) { _, which ->
+                    if (which == colorLabels.size - 1) {
+                        val pickerDialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
+                        val colorPicker = pickerDialogView.findViewById<HexagonColorPickerView>(R.id.hexagonPicker)
+                        val cardPreview = pickerDialogView.findViewById<MaterialCardView>(R.id.cardColorPreview)
+                        val tvHex = pickerDialogView.findViewById<TextView>(R.id.tvHexPreview)
+
+                        colorPicker.onColorChangeListener = { hex ->
+                            cardPreview.setCardBackgroundColor(Color.parseColor(hex))
+                            tvHex.text = hex
+                        }
+
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setView(pickerDialogView)
+                            .setPositiveButton("OK") { _, _ ->
+                                currentBgColor = colorPicker.currentColorHex
+                                dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
+                            }.show()
+                    } else {
+                        currentBgColor = hexColors[which]
+                        dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
                     }
-
-                    MaterialAlertDialogBuilder(requireContext()).setView(pickerDialogView)
-                        .setPositiveButton("OK") { _, _ ->
-                            currentBgColor = colorPicker.currentColorHex
-                            dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
-                        }.show()
-                } else {
-                    currentBgColor = hexColors[which]
-                    dialogView.setBackgroundColor(Color.parseColor(currentBgColor))
-                }
-            }.show()
+                }.show()
         }
 
         var isPinned = listToEdit?.isPinned ?: false
-        fun updatePinIcon() { btnPin.setImageResource(if (isPinned) android.R.drawable.btn_star_big_on else android.R.drawable.btn_star_big_off) }
+        fun updatePinIcon() {
+            btnPin.setImageResource(if (isPinned) R.drawable.ic_pin else R.drawable.ic_pin_off)
+            btnPin.imageTintList = ColorStateList.valueOf(
+                if (isPinned) ContextCompat.getColor(requireContext(), R.color.primary) else Color.parseColor("#757575")
+            )
+        }
         updatePinIcon()
-        btnPin.setOnClickListener { isPinned = !isPinned; updatePinIcon(); Toast.makeText(context, if (isPinned) "Afixada!" else "Desafixada.", Toast.LENGTH_SHORT).show() }
+        btnPin.setOnClickListener {
+            isPinned = !isPinned
+            updatePinIcon()
+            Toast.makeText(context, if (isPinned) "Nota afixada no topo 📌" else "Nota desafixada", Toast.LENGTH_SHORT).show()
+        }
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
@@ -407,6 +471,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                     }
                     if (listToEdit != null) {
                         viewModel.update(listToEdit.copy(name = name, content = htmlContent, tag = finalTag, backgroundColor = currentBgColor, isPinned = isPinned))
+                        logViewModel.registrarAcao("LISTA", "Atualizou a nota '$name'")
                     } else {
                         viewModel.insert(
                             MyList(
@@ -417,6 +482,7 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
                                 isPinned = isPinned
                             )
                         )
+                        logViewModel.registrarAcao("LISTA_NOVA", "Criou a nota '$name'")
                     }
                 }
                 dialogInterface.dismiss()
@@ -425,44 +491,66 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             .create()
 
         if (listToEdit != null) {
-            btnArchiveList?.visibility = View.VISIBLE
-            btnDeleteList?.visibility = View.VISIBLE
+            btnArchiveList.visibility = View.VISIBLE
+            btnDeleteList.visibility = View.VISIBLE
 
-            if(listToEdit.isArchived) {
-                btnArchiveList?.setImageResource(android.R.drawable.ic_menu_revert)
+            if (listToEdit.isArchived) {
+                btnArchiveList.setImageResource(R.drawable.ic_undo)
+            } else {
+                btnArchiveList.setImageResource(R.drawable.ic_archive)
             }
 
-            btnArchiveList?.setOnClickListener {
-                if(listToEdit.isArchived) {
+            btnArchiveList.setOnClickListener {
+                if (listToEdit.isArchived) {
                     viewModel.update(listToEdit.copy(isArchived = false))
-                    Toast.makeText(context, "Lista Restaurada!", Toast.LENGTH_SHORT).show()
+                    logViewModel.registrarAcao("LISTA", "Restaurou a nota '${listToEdit.name}'")
+                    Toast.makeText(context, "Nota restaurada! 📥", Toast.LENGTH_SHORT).show()
                 } else {
                     viewModel.update(listToEdit.copy(isArchived = true))
-                    Toast.makeText(context, "Lista Arquivada!", Toast.LENGTH_SHORT).show()
+                    logViewModel.registrarAcao("LISTA", "Arquivou a nota '${listToEdit.name}'")
+                    Toast.makeText(context, "Nota arquivada! 📁", Toast.LENGTH_SHORT).show()
                 }
                 dialog.dismiss()
             }
 
-            btnDeleteList?.setOnClickListener {
-                viewModel.delete(listToEdit)
-                Toast.makeText(context, "Lista Eliminada!", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+            btnDeleteList.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Eliminar Nota?")
+                    .setMessage("Tens a certeza que queres eliminar '${listToEdit.name}'?")
+                    .setPositiveButton("Eliminar") { _, _ ->
+                        viewModel.delete(listToEdit)
+                        logViewModel.registrarAcao("LISTA", "Eliminou a nota '${listToEdit.name}'")
+                        Snackbar.make(binding.root, "Nota eliminada", Snackbar.LENGTH_LONG)
+                            .setAction("DESFAZER") {
+                                viewModel.insert(listToEdit)
+                            }
+                            .show()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
             }
 
             etListName.setText(listToEdit.name)
             etTag.setText(listToEdit.tag ?: "", false)
-            try { etListContent.setText(HtmlCompat.fromHtml(listToEdit.content, HtmlCompat.FROM_HTML_MODE_COMPACT)) }
-            catch (e: Exception) { etListContent.setText(listToEdit.content) }
+            try {
+                etListContent.setText(HtmlCompat.fromHtml(listToEdit.content, HtmlCompat.FROM_HTML_MODE_COMPACT))
+            } catch (e: Exception) {
+                etListContent.setText(listToEdit.content)
+            }
         }
 
         dialog.show()
         val window = dialog.window
         if (window != null) {
             val displayMetrics = requireContext().resources.displayMetrics
-            window.setLayout((displayMetrics.widthPixels * 0.95).toInt(), (displayMetrics.heightPixels * 0.95).toInt())
-            dialogView.minimumHeight = (displayMetrics.heightPixels * 0.95).toInt()
+            window.setLayout((displayMetrics.widthPixels * 0.95).toInt(), (displayMetrics.heightPixels * 0.92).toInt())
+            dialogView.minimumHeight = (displayMetrics.heightPixels * 0.90).toInt()
         }
     }
 
-    override fun onDestroyView() { super.onDestroyView(); _binding = null }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
 }

@@ -34,10 +34,26 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // 3. Ensinamos o Android a atualizar a base de dados da Versão 1 para a Versão 2 sem apagar os teus dados!
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("CREATE TABLE IF NOT EXISTS `tags_table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` TEXT NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `tags` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` TEXT NOT NULL, `type` TEXT NOT NULL DEFAULT 'S')")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `lists_table` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `content` TEXT NOT NULL DEFAULT '',
+                        `tag` TEXT,
+                        `backgroundColor` TEXT,
+                        `isPinned` INTEGER NOT NULL DEFAULT 0,
+                        `orderIndex` INTEGER NOT NULL DEFAULT 0,
+                        `isArchived` INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
             }
         }
 
@@ -48,8 +64,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mystreaks_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
-                    .fallbackToDestructiveMigration() // ADICIONA ESTA LINHA (Rede de segurança)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

@@ -9,7 +9,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nome da Lista"
+        android:hint="Título da Nota"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etListName"
@@ -25,7 +25,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="Categoria"
+        android:hint="Categoria (Opcional)"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
             android:id="@+id/etTag"
@@ -34,6 +34,7 @@
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Barra de Ferramentas Principal -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -45,29 +46,30 @@
             android:id="@+id/btnFormat"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_sort_alphabetically"
+            android:src="@drawable/ic_format_bold"
+            app:tint="@color/primary"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tooltipText="Formatar Texto" />
+            android:contentDescription="Formatar Texto" />
 
         <ImageButton
             android:id="@+id/btnBgColor"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_gallery"
+            android:layout_marginStart="6dp"
+            android:src="@drawable/ic_palette"
+            app:tint="?attr/colorOnSurface"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tooltipText="Cor de Fundo da Nota" />
-
-
+            android:contentDescription="Cor de Fundo da Nota" />
 
         <ImageButton
             android:id="@+id/btnPin"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/btn_star_big_off"
+            android:layout_marginStart="6dp"
+            android:src="@drawable/ic_pin_off"
+            app:tint="?attr/colorOnSurface"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tooltipText="Fixar no Topo" />
+            android:contentDescription="Fixar no Topo" />
 
         <Space
             android:layout_width="0dp"
@@ -78,40 +80,47 @@
             android:id="@+id/btnArchiveList"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_save"
+            android:src="@drawable/ic_archive"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:visibility="gone"
-            app:tint="#757575"/>
+            app:tint="#757575"
+            android:contentDescription="Arquivar" />
 
         <ImageButton
             android:id="@+id/btnDeleteList"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_delete"
+            android:src="@drawable/ic_delete"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:visibility="gone"
-            app:tint="#F44336"/>
-
+            app:tint="#F44336"
+            android:contentDescription="Eliminar" />
 
         <ImageButton
             android:id="@+id/btnUndo"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_revert"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:src="@drawable/ic_undo"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Desfazer" />
+
         <ImageButton
             android:id="@+id/btnRedo"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_media_next"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:src="@drawable/ic_redo"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Refazer" />
     </LinearLayout>
 
+    <!-- Barra de Formatação Expansível -->
     <HorizontalScrollView
         android:id="@+id/formatToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="6dp"
         android:visibility="gone"
         android:scrollbars="none">
 
@@ -119,27 +128,102 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="#F5F5F5"
-            android:padding="8dp"
+            android:background="@drawable/rounded_edittext"
+            android:padding="6dp"
             android:gravity="center_vertical">
 
-            <Button android:id="@+id/btnTitle1" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="T1" android:textSize="18sp" android:textStyle="bold" android:layout_marginEnd="4dp"/>
-            <Button android:id="@+id/btnTitle2" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="T2" android:textSize="16sp" android:textStyle="bold" android:layout_marginEnd="8dp"/>
-            <Button android:id="@+id/btnNormalText" android:layout_width="wrap_content" android:layout_height="wrap_content" style="?attr/materialButtonOutlinedStyle" android:text="Normal" android:layout_marginEnd="8dp"/>
+            <Button
+                android:id="@+id/btnTitle1"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                style="?attr/materialButtonOutlinedStyle"
+                android:text="T1"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="10dp"
+                android:layout_marginEnd="4dp"/>
 
+            <Button
+                android:id="@+id/btnTitle2"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                style="?attr/materialButtonOutlinedStyle"
+                android:text="T2"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="10dp"
+                android:layout_marginEnd="6dp"/>
 
-            <View android:layout_width="1dp" android:layout_height="24dp" android:background="#CCC" android:layout_marginHorizontal="8dp"/>
+            <Button
+                android:id="@+id/btnNormalText"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                style="?attr/materialButtonOutlinedStyle"
+                android:text="Normal"
+                android:textSize="12sp"
+                android:paddingHorizontal="10dp"
+                android:layout_marginEnd="6dp"/>
 
-            <ImageButton android:id="@+id/btnBold" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_edit" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Negrito" android:layout_marginEnd="4dp"/>
-            <ImageButton android:id="@+id/btnItalic" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_info_details" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Itálico" android:layout_marginEnd="4dp"/>
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="#D1D5DB"
+                android:layout_marginHorizontal="6dp"/>
 
-            <Button android:id="@+id/btnUnderline" android:layout_width="40dp" android:layout_height="40dp" style="?attr/materialButtonOutlinedStyle" android:text="U" android:textStyle="bold" android:textSize="16sp" android:padding="0dp"/>
+            <ImageButton
+                android:id="@+id/btnBold"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_format_bold"
+                app:tint="?attr/colorOnSurface"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Negrito"
+                android:layout_marginEnd="4dp"/>
 
-            <View android:layout_width="1dp" android:layout_height="24dp" android:background="#CCC" android:layout_marginHorizontal="8dp"/>
+            <ImageButton
+                android:id="@+id/btnItalic"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_format_italic"
+                app:tint="?attr/colorOnSurface"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Itálico"
+                android:layout_marginEnd="4dp"/>
 
-            <ImageButton android:id="@+id/btnTextColor" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_edit" android:tint="@android:color/black" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Cor do Texto" android:layout_marginEnd="8dp"/>
+            <ImageButton
+                android:id="@+id/btnUnderline"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_format_underlined"
+                app:tint="?attr/colorOnSurface"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Sublinhado"
+                android:layout_marginEnd="4dp"/>
 
-            <ImageButton android:id="@+id/btnClearFormat" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_close_clear_cancel" android:background="?attr/selectableItemBackgroundBorderless" android:tooltipText="Voltar ao Texto Normal" />
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="#D1D5DB"
+                android:layout_marginHorizontal="6dp"/>
+
+            <ImageButton
+                android:id="@+id/btnTextColor"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_palette"
+                app:tint="@color/primary"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Cor do Texto"
+                android:layout_marginEnd="4dp"/>
+
+            <ImageButton
+                android:id="@+id/btnClearFormat"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:tint="#EF4444"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Limpar Formatação" />
 
         </LinearLayout>
     </HorizontalScrollView>

@@ -26,9 +26,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.tasks.TasksActivity" android:exported="false" />
         <activity android:name=".ui.logs.LogsActivity" android:exported="false" />
-
         <activity android:name=".ui.medals.MedalsActivity" android:exported="false" />
 
         <receiver android:name=".widget.StreakWidgetProvider" android:exported="true">

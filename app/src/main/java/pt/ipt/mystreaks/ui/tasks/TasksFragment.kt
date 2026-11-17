@@ -298,9 +298,9 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             dialogBinding.etTag.setText(selectedTag.name, false)
         }
 
-        // API MODERNA DE DATAS (LocalDate) no Fragment, tal como tínhamos ajustado
-        val initialDate = if (selectedDueDate != null) {
-            Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDate()
+        val currentDueDate = selectedDueDate
+        val initialDate = if (currentDueDate != null) {
+            Instant.ofEpochMilli(currentDueDate).atZone(ZoneId.systemDefault()).toLocalDate()
         } else {
             LocalDate.now()
         }
@@ -312,8 +312,8 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
             dialogBinding.etTaskNotes.setText(taskToEdit?.notes ?: "")
             dialogBinding.ratingPriority.rating = taskToEdit?.priority?.toFloat() ?: 3.0f
 
-            if (selectedDueDate != null) {
-                val zdt = Instant.ofEpochMilli(selectedDueDate!!).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            if (currentDueDate != null) {
+                val zdt = Instant.ofEpochMilli(currentDueDate).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                 dialogBinding.btnDatePicker.text = "Prazo: ${zdt.format(formatter)}"
             }

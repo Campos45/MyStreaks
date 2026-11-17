@@ -27,7 +27,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Liga o Trabalhador de Fundo para verificar os Resets todos os dias à meia-noite
-        val streakWorkRequest = PeriodicWorkRequestBuilder<StreakWorker>(1, TimeUnit.DAYS).build()
+        val now = java.util.Calendar.getInstance()
+        val nextMidnight = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 2)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val initialDelay = (nextMidnight.timeInMillis - now.timeInMillis).coerceAtLeast(0L)
+
+        val streakWorkRequest = PeriodicWorkRequestBuilder<StreakWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "StreakResetWork",
             ExistingPeriodicWorkPolicy.KEEP,

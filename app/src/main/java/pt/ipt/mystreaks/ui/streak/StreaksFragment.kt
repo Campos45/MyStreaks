@@ -272,6 +272,11 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         if (isEditing) {
             dialogBinding.etActivityName.setText(streakToEdit!!.name)
             dialogBinding.etTag.setText(streakToEdit.tag ?: "", false)
+            when (streakToEdit.type) {
+                "S" -> dialogBinding.rbWeekly.isChecked = true
+                "M" -> dialogBinding.rbMonthly.isChecked = true
+                else -> dialogBinding.rbDaily.isChecked = true
+            }
         }
 
         MaterialAlertDialogBuilder(requireContext())
@@ -286,6 +291,12 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                 val finalHour = if (dialogBinding.switchReminder.isChecked) selectedHour else null
                 val finalMinute = if (dialogBinding.switchReminder.isChecked) selectedMinute else null
 
+                val selectedType = when {
+                    dialogBinding.rbWeekly.isChecked -> "S"
+                    dialogBinding.rbMonthly.isChecked -> "M"
+                    else -> "D"
+                }
+
                 if (name.isNotBlank()) {
                     if (finalTag != null) {
                         val exists = tagViewModel.allTags.value?.any { it.name.trim().equals(finalTag, true) } ?: false
@@ -293,14 +304,14 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
                     }
 
                     if (isEditing) {
-                        viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag, remindHour = finalHour, remindMinute = finalMinute))
+                        viewModel.update(streakToEdit!!.copy(name = name, tag = finalTag, type = selectedType, remindHour = finalHour, remindMinute = finalMinute))
                         Toast.makeText(requireContext(), "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
                         cancelStreakAlarm(streakToEdit.id)
                         if (finalHour != null && finalMinute != null) {
                             scheduleStreakAlarm(streakToEdit.id, finalHour, finalMinute)
                         }
                     } else {
-                        val newStreak = Streak(name = name, tag = finalTag, type = "D", remindHour = finalHour, remindMinute = finalMinute)
+                        val newStreak = Streak(name = name, tag = finalTag, type = selectedType, remindHour = finalHour, remindMinute = finalMinute)
                         viewLifecycleOwner.lifecycleScope.launch {
                             val newId = withContext(Dispatchers.IO) {
                                 viewModel.insertAndGetId(newStreak)
@@ -333,6 +344,13 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             tvMonthName.text = "${monthNames[currentMonth.monthValue - 1]} ${currentMonth.year}"
 
             val daysList = mutableListOf<CalendarDay>()
+            // Alinhamento do dia da semana: Segunda-feira = 1, Domingo = 7
+            val firstDayOfMonth = currentMonth.atDay(1)
+            val leadingBlanks = firstDayOfMonth.dayOfWeek.value - 1
+            for (b in 0 until leadingBlanks) {
+                daysList.add(CalendarDay("", isCompleted = false, isCurrentMonth = false))
+            }
+
             val daysInMonth = currentMonth.lengthOfMonth()
 
             for (i in 1..daysInMonth) {
@@ -364,17 +382,18 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
             if (previousDateLd == null) {
                 currentStreakCalc = 1
             } else {
+                val prev = previousDateLd
                 when (streak.type) {
                     "D" -> {
-                        val diffDays = ChronoUnit.DAYS.between(previousDateLd!!, calLd)
+                        val diffDays = ChronoUnit.DAYS.between(prev, calLd)
                         if (diffDays == 1L) currentStreakCalc++ else if (diffDays > 1L) currentStreakCalc = 1
                     }
                     "S" -> {
-                        val diffWeeks = ChronoUnit.WEEKS.between(previousDateLd!!.with(DayOfWeek.MONDAY), calLd.with(DayOfWeek.MONDAY))
+                        val diffWeeks = ChronoUnit.WEEKS.between(prev.with(DayOfWeek.MONDAY), calLd.with(DayOfWeek.MONDAY))
                         if (diffWeeks == 1L) currentStreakCalc++ else if (diffWeeks > 1L) currentStreakCalc = 1
                     }
                     "M" -> {
-                        val diffMonths = ChronoUnit.MONTHS.between(previousDateLd!!.withDayOfMonth(1), calLd.withDayOfMonth(1))
+                        val diffMonths = ChronoUnit.MONTHS.between(prev.withDayOfMonth(1), calLd.withDayOfMonth(1))
                         if (diffMonths == 1L) currentStreakCalc++ else if (diffMonths > 1L) currentStreakCalc = 1
                     }
                 }
