@@ -28,5 +28,6 @@ data class Task(
     var notes: String? = null,
     var dueDate: Long? = null,
 
-    var isArchived: Boolean = false
+    var isArchived: Boolean = false,
+    var completionNote: String? = null
 )

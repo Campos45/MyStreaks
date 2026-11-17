@@ -29,7 +29,9 @@ import pt.ipt.mystreaks.data.AppDatabase
 import pt.ipt.mystreaks.data.MyFullBackup
 import pt.ipt.mystreaks.data.model.Tag
 import pt.ipt.mystreaks.databinding.FragmentSettingsBinding
+import pt.ipt.mystreaks.utils.AppPreferences
 import pt.ipt.mystreaks.utils.HexagonColorPickerView
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
@@ -50,8 +52,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     val tasks = database.taskDao().getAllTasksSync()
                     val lists = database.myListDao().getAllListsSync()
                     val tags = database.tagDao().getAllTagsSyncList()
+                    val diaryEntries = database.diaryDao().getAllEntriesSync()
 
-                    val backup = MyFullBackup(streaks, tasks, lists, tags)
+                    val backup = MyFullBackup(streaks, tasks, lists, tags, diaryEntries)
                     val json = gson.toJson(backup)
 
                     requireContext().contentResolver.openOutputStream(it)?.use { os ->
@@ -95,6 +98,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
                         backup.streaks?.forEach { database.streakDao().insert(it) }
                         backup.lists?.forEach { database.myListDao().insert(it) }
+                        backup.diaryEntries?.forEach { database.diaryDao().upsert(it) }
                     }
 
                     // --- A CURA DA AMNÉSIA: 2. RECONSTRUIR OS ALARMES NO ANDROID ---
@@ -173,6 +177,23 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         _binding = FragmentSettingsBinding.bind(view)
         tagViewModel = ViewModelProvider(this)[TagViewModel::class.java]
 
+        // Dark Mode Switch
+        val isDark = AppPreferences.isDarkMode(requireContext())
+        binding.switchDarkMode.isChecked = isDark
+        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
+            AppPreferences.setDarkMode(requireContext(), isChecked)
+        }
+        binding.btnDarkMode.setOnClickListener {
+            binding.switchDarkMode.toggle()
+        }
+
+        // Language Selector
+        val currentLangCode = AppPreferences.getLanguage(requireContext())
+        binding.tvCurrentLanguage.text = AppPreferences.getLanguageDisplayName(currentLangCode)
+        binding.btnLanguage.setOnClickListener {
+            showLanguageSelectorDialog()
+        }
+
         binding.btnManageTagsStreaks.setOnClickListener { showManageTagsDialog("S") }
         binding.btnManageTagsTasks.setOnClickListener { showManageTagsDialog("T") }
         binding.btnManageTagsLists.setOnClickListener { showManageTagsDialog("L") }
@@ -188,6 +209,36 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     else importLauncher.launch("application/json")
                 }.show()
         }
+
+        // Tooltips informativos nos botões das Definições
+        binding.btnDarkMode.setInfoTooltip(R.string.tooltip_dark_mode)
+        binding.switchDarkMode.setInfoTooltip(R.string.tooltip_dark_mode)
+        binding.btnLanguage.setInfoTooltip(R.string.tooltip_language)
+        binding.btnMedals.setInfoTooltip(R.string.tooltip_medals)
+        binding.btnLogs.setInfoTooltip(R.string.tooltip_logs)
+        binding.btnExportData.setInfoTooltip(R.string.tooltip_backup)
+        binding.btnManageTagsStreaks.setInfoTooltip(R.string.tooltip_manage_tags)
+        binding.btnManageTagsTasks.setInfoTooltip(R.string.tooltip_manage_tags)
+        binding.btnManageTagsLists.setInfoTooltip(R.string.tooltip_manage_tags)
+    }
+
+    private fun showLanguageSelectorDialog() {
+        val languages = AppPreferences.SUPPORTED_LANGUAGES
+        val labels = languages.map { it.displayName }.toTypedArray()
+        val currentCode = AppPreferences.getLanguage(requireContext())
+        val checkedIndex = languages.indexOfFirst { it.code == currentCode }.coerceAtLeast(0)
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.select_language)
+            .setSingleChoiceItems(labels, checkedIndex) { dialog, which ->
+                val chosen = languages[which]
+                binding.tvCurrentLanguage.text = chosen.displayName
+                AppPreferences.setLanguage(requireContext(), chosen.code)
+                Toast.makeText(requireContext(), R.string.language_changed, Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun showManageTagsDialog(type: String) {
@@ -208,8 +259,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         var selectedColor = "#448AFF" // Cor default (Azul)
 
         val et = dialogView.findViewById<EditText>(R.id.etNewTagName)
-        et.setTextColor(Color.BLACK)
-        et.setHintTextColor(Color.DKGRAY)
 
         val btn = dialogView.findViewById<MaterialButton>(R.id.btnSaveTag)
 

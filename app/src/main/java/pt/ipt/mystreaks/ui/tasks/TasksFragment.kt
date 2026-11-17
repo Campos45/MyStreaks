@@ -40,6 +40,7 @@ import pt.ipt.mystreaks.data.repository.LogRepository
 import pt.ipt.mystreaks.data.repository.TaskRepository
 import pt.ipt.mystreaks.databinding.DialogAddTaskBinding
 import pt.ipt.mystreaks.databinding.FragmentTasksBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -74,22 +75,9 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentTasksBinding.bind(view)
 
-        binding.etSearch.setTextColor(Color.BLACK)
-        binding.etSearch.setHintTextColor(Color.DKGRAY)
-
         adapter = TaskAdapter(
             onTaskUpdate = { updatedTask ->
-                viewModel.update(updatedTask)
-                if (updatedTask.isCompleted) {
-                    cancelTaskAlarm(updatedTask.id, updatedTask.name)
-                    if (!updatedTask.isArchived) {
-                        playConfettiAnimation()
-                    }
-                } else if (updatedTask.dueDate != null && !updatedTask.isArchived) {
-                    scheduleTaskAlarm(updatedTask.id, updatedTask.name, updatedTask.dueDate)
-                }
-                val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
-                logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
+                handleTaskUpdated(updatedTask)
             },
             onEditClicked = { task -> showAddTaskDialog(task) },
             onArchiveClicked = { task ->
@@ -98,7 +86,7 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                     cancelTaskAlarm(task.id, task.name)
                     logViewModel.registrarAcao("TAREFA", "Arquivou a tarefa '${task.name}'")
                     Snackbar.make(binding.root, "Tarefa arquivada 📁", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = false)); if (task.dueDate != null) scheduleTaskAlarm(task.id, task.name, task.dueDate) }
+                        .setAction(getString(R.string.undo)) { viewModel.update(task.copy(isArchived = false)); if (task.dueDate != null) scheduleTaskAlarm(task.id, task.name, task.dueDate) }
                         .show()
                 } else {
                     viewModel.update(task.copy(isArchived = false))
@@ -107,7 +95,7 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                     }
                     logViewModel.registrarAcao("TAREFA", "Restaurou a tarefa '${task.name}'")
                     Snackbar.make(binding.root, "Tarefa restaurada 📝", Snackbar.LENGTH_LONG)
-                        .setAction("DESFAZER") { viewModel.update(task.copy(isArchived = true)); cancelTaskAlarm(task.id, task.name) }
+                        .setAction(getString(R.string.undo)) { viewModel.update(task.copy(isArchived = true)); cancelTaskAlarm(task.id, task.name) }
                         .show()
                 }
             },
@@ -116,12 +104,20 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
                 cancelTaskAlarm(task.id, task.name)
                 logViewModel.registrarAcao("TAREFA", "Eliminou '${task.name}'")
                 Snackbar.make(binding.root, "Tarefa eliminada 🗑️", Snackbar.LENGTH_LONG)
-                    .setAction("DESFAZER") {
+                    .setAction(getString(R.string.undo)) {
                         viewModel.insert(task)
                         if (task.dueDate != null && !task.isCompleted && !task.isArchived) {
                             scheduleTaskAlarm(task.id, task.name, task.dueDate)
                         }
                     }.show()
+            },
+            onCompleteRequested = { candidateTask, onCancel ->
+                TaskDialogs.showCompletionNoteDialog(
+                    context = requireContext(),
+                    task = candidateTask,
+                    onComplete = { completedTask -> handleTaskUpdated(completedTask) },
+                    onCancel = onCancel
+                )
             }
         )
 
@@ -228,6 +224,28 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         }
 
         binding.fabAddTask.setOnClickListener { showAddTaskDialog() }
+
+        // Tooltips informativos nos botões
+        binding.ivFilter.setInfoTooltip(R.string.tooltip_filter)
+        binding.ivSearch.setInfoTooltip(R.string.tooltip_search)
+        binding.fabAddTask.setInfoTooltip(R.string.tooltip_add_task)
+        binding.btnPendingTasks.setInfoTooltip(R.string.tooltip_tab_pending)
+        binding.btnCompletedTasks.setInfoTooltip(R.string.tooltip_tab_completed)
+        binding.btnArchivedTasks.setInfoTooltip(R.string.tooltip_tab_archived)
+    }
+
+    private fun handleTaskUpdated(updatedTask: Task) {
+        viewModel.update(updatedTask)
+        if (updatedTask.isCompleted) {
+            cancelTaskAlarm(updatedTask.id, updatedTask.name)
+            if (!updatedTask.isArchived) {
+                playConfettiAnimation()
+            }
+        } else if (updatedTask.dueDate != null && !updatedTask.isArchived) {
+            scheduleTaskAlarm(updatedTask.id, updatedTask.name, updatedTask.dueDate)
+        }
+        val estado = if (updatedTask.isCompleted) "concluída" else "atualizada/pendente"
+        logViewModel.registrarAcao("TAREFA", "A tarefa '${updatedTask.name}' ficou $estado")
     }
 
     private fun refreshUI() {

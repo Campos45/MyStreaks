@@ -40,6 +40,7 @@ import pt.ipt.mystreaks.data.model.Tag
 import pt.ipt.mystreaks.data.repository.LogRepository
 import pt.ipt.mystreaks.data.repository.MyListRepository
 import pt.ipt.mystreaks.databinding.FragmentListsBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 
 class ListsFragment : Fragment(R.layout.fragment_lists) {
 
@@ -92,8 +93,12 @@ class ListsFragment : Fragment(R.layout.fragment_lists) {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        binding.etSearch.setTextColor(Color.BLACK)
-        binding.etSearch.setHintTextColor(Color.DKGRAY)
+        // Tooltips informativos nos botões das Listas
+        binding.ivFilter.setInfoTooltip(R.string.tooltip_filter)
+        binding.ivSearch.setInfoTooltip(R.string.tooltip_search)
+        binding.fabAddList.setInfoTooltip(R.string.tooltip_add_list)
+        binding.btnActiveLists.setInfoTooltip(R.string.tooltip_tab_active)
+        binding.btnArchivedLists.setInfoTooltip(R.string.tooltip_tab_archived)
 
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}

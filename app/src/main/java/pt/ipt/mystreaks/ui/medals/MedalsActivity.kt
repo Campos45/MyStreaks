@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pt.ipt.mystreaks.data.AppDatabase
 import pt.ipt.mystreaks.databinding.ActivityMedalsBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.util.Calendar
 
 class MedalsActivity : AppCompatActivity() {
@@ -22,6 +23,7 @@ class MedalsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnBack.setOnClickListener { finish() }
+        binding.btnBack.setInfoTooltip(getString(pt.ipt.mystreaks.R.string.cancel))
         binding.rvMedals.layoutManager = GridLayoutManager(this, 2)
 
         calculateMedals()

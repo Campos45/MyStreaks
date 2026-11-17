@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyStreaks</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_streaks">Serie</string>
+    <string name="nav_tasks">Attività</string>
+    <string name="nav_diary">Diario</string>
+    <string name="nav_lists">Liste</string>
+    <string name="nav_settings">Impostazioni</string>
+
+    <!-- Common -->
+    <string name="save">Salva</string>
+    <string name="cancel">Annulla</string>
+    <string name="delete">Elimina</string>
+    <string name="archive">Archivia</string>
+    <string name="undo">Annulla</string>
+    <string name="ok">OK</string>
+    <string name="new_item">Nuova</string>
+    <string name="today">Oggi</string>
+    <string name="tomorrow">Domani</string>
+    <string name="yesterday">Ieri</string>
+
+    <!-- Streaks -->
+    <string name="streaks_title">Serie 🔥</string>
+    <string name="tab_active">Attive</string>
+    <string name="tab_archived">Archiviate</string>
+    <string name="search_streaks_hint">Cerca abitudine...</string>
+    <string name="streak_empty_title">Nessuna abitudine</string>
+    <string name="streak_empty_desc">Tocca \'Nuova\' per iniziare la tua serie!</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Attività 📝</string>
+    <string name="tab_pending">Da fare</string>
+    <string name="tab_completed">Completate</string>
+    <string name="search_tasks_hint">Cerca attività...</string>
+    <string name="task_empty_title">Nessuna Attività</string>
+    <string name="task_empty_desc">Tocca \'Nuova\' per aggiungere un\'attività!</string>
+    <string name="new_task_title">Nuova Attività</string>
+    <string name="edit_task_title">Modifica Attività</string>
+    <string name="notes_label">📝 Note:</string>
+    <string name="completion_note_label">✅ Nota di Completamento:</string>
+    <string name="completion_note_prompt_title">Attività Completata! 🎉</string>
+    <string name="completion_note_prompt_msg">Vuoi aggiungere una nota di completamento? (opzionale)</string>
+    <string name="completion_note_prompt_hint">Es: Terminato in anticipo, tutto approvato...</string>
+    <string name="btn_complete_with_note">Completa</string>
+    <string name="btn_complete_no_note">Senza nota</string>
+    <string name="task_completed_at">Completata il: %1$s</string>
+    <string name="task_overdue">⚠️ In ritardo: %1$s</string>
+    <string name="task_due">⏳ Scadenza: %1$s</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Le Mie Liste</string>
+    <string name="tab_archive">Archivio</string>
+    <string name="search_lists_hint">Cerca lista...</string>
+    <string name="new_list">Nuova Lista</string>
+    <string name="empty_lists_title">Nessuna Lista</string>
+    <string name="empty_lists_desc">Tocca il pulsante per creare la tua prima lista!</string>
+
+    <!-- Diary -->
+    <string name="diary_title">Diario 📖</string>
+    <string name="diary_today_btn">Oggi</string>
+    <string name="diary_notes_section">Note del Giorno</string>
+    <string name="diary_notes_hint">Scrivi qui le tue note, pensieri o piano per questo giorno...</string>
+    <string name="diary_save_note">Salva Nota</string>
+    <string name="diary_note_saved">Nota del diario salvata! 📖</string>
+    <string name="diary_tasks_section">Attività Programmate</string>
+    <string name="diary_no_tasks">Nessuna attività programmata per questo giorno.</string>
+    <string name="diary_add_task">Nuova Attività per oggi</string>
+    <string name="diary_notification_title">Agenda di Oggi 📖</string>
+    <string name="diary_notification_tasks">Hai %1$d attività in programma per oggi!</string>
+    <string name="diary_notification_note">Hai delle note salvate nel diario di oggi.</string>
+    <string name="diary_day_mon">Lun</string>
+    <string name="diary_day_tue">Mar</string>
+    <string name="diary_day_wed">Mer</string>
+    <string name="diary_day_thu">Gio</string>
+    <string name="diary_day_fri">Ven</string>
+    <string name="diary_day_sat">Sab</string>
+    <string name="diary_day_sun">Dom</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Impostazioni ⚙️</string>
+    <string name="medals_title">I Miei Trofei</string>
+    <string name="logs_title">Registro di Sistema</string>
+    <string name="backup_title">Backup e Ripristino (JSON)</string>
+    <string name="appearance_section">Aspetto e Lingua</string>
+    <string name="dark_mode_title">Modalità Scura</string>
+    <string name="dark_mode_desc">Passa dal tema chiaro a quello scuro</string>
+    <string name="language_title">Lingua</string>
+    <string name="select_language">Seleziona Lingua</string>
+    <string name="categories_section">Gestione Categorie</string>
+    <string name="categories_streaks">Categorie Serie</string>
+    <string name="categories_tasks">Categorie Attività</string>
+    <string name="categories_lists">Categorie Liste</string>
+    <string name="language_changed">Lingua aggiornata!</string>
+
+    <!-- Tooltips / Info Notes -->
+    <string name="tooltip_add_task">Crea una nuova attività con priorità, scadenza e note</string>
+    <string name="tooltip_add_streak">Crea una nuova serie giornaliera, settimanale o mensile</string>
+    <string name="tooltip_add_list">Crea una nuova nota o lista</string>
+    <string name="tooltip_filter">Filtra o ordina gli elementi visualizzati</string>
+    <string name="tooltip_search">Mostra o nascondi la barra di ricerca</string>
+    <string name="tooltip_edit">Modifica i dettagli di questo elemento</string>
+    <string name="tooltip_expand_subtasks">Espandi o comprimi le sotto-attività</string>
+    <string name="tooltip_expand_notes">Espandi o comprimi le note dettagliate</string>
+    <string name="tooltip_archive">Archivia o ripristina questo elemento</string>
+    <string name="tooltip_delete">Elimina definitivamente questo elemento</string>
+    <string name="tooltip_complete_task">Segna l\'attività come completata e aggiungi una nota</string>
+    <string name="tooltip_tab_pending">Visualizza attività da fare</string>
+    <string name="tooltip_tab_completed">Visualizza attività completate</string>
+    <string name="tooltip_tab_archived">Visualizza elementi archiviati</string>
+    <string name="tooltip_tab_active">Visualizza elementi attivi</string>
+    <string name="tooltip_prev_month">Visualizza il mese precedente</string>
+    <string name="tooltip_next_month">Visualizza il mese successivo</string>
+    <string name="tooltip_today">Torna rapidamente a oggi</string>
+    <string name="tooltip_save_diary">Salva le note di questo giorno nel diario</string>
+    <string name="tooltip_diary_add_task">Crea un\'attività con scadenza in questo giorno</string>
+    <string name="tooltip_medals">Visualizza medaglie e trofei sbloccati</string>
+    <string name="tooltip_logs">Visualizza il registro delle attività dell\'app</string>
+    <string name="tooltip_backup">Esporta o importa un backup JSON</string>
+    <string name="tooltip_dark_mode">Attiva o disattiva la modalità scura</string>
+    <string name="tooltip_language">Scegli la lingua dell\'applicazione</string>
+    <string name="tooltip_manage_tags">Crea, modifica o rimuovi categorie</string>
+    <string name="tooltip_nav_streaks">Vai alla schermata delle tue Serie</string>
+    <string name="tooltip_nav_tasks">Vai alla schermata delle tue Attività</string>
+    <string name="tooltip_nav_diary">Vai al tuo Diario e Agenda</string>
+    <string name="tooltip_nav_lists">Vai alle tue Liste e Note</string>
+    <string name="tooltip_nav_settings">Vai alle Impostazioni dell\'app</string>
+</resources>

@@ -39,6 +39,7 @@ import pt.ipt.mystreaks.data.repository.LogRepository
 import pt.ipt.mystreaks.data.repository.StreakRepository
 import pt.ipt.mystreaks.databinding.DialogAddStreakBinding
 import pt.ipt.mystreaks.databinding.FragmentStreaksBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -70,13 +71,17 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentStreaksBinding.bind(view)
 
-        binding.tvAppTitle.text = "Streaks 🔥"
+        binding.tvAppTitle.text = getString(R.string.streaks_title)
         binding.ivSearch.setOnClickListener {
             binding.etSearch.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        binding.etSearch.setTextColor(Color.BLACK)
-        binding.etSearch.setHintTextColor(Color.DKGRAY)
+        // Tooltips informativos nos botões das Streaks
+        binding.ivFilter.setInfoTooltip(R.string.tooltip_filter)
+        binding.ivSearch.setInfoTooltip(R.string.tooltip_search)
+        binding.fabAddStreak.setInfoTooltip(R.string.tooltip_add_streak)
+        binding.btnActiveStreaks.setInfoTooltip(R.string.tooltip_tab_active)
+        binding.btnArchivedStreaks.setInfoTooltip(R.string.tooltip_tab_archived)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

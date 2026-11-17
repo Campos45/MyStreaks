@@ -17,6 +17,7 @@ import com.zerobranch.layout.SwipeLayout
 import pt.ipt.mystreaks.R
 import pt.ipt.mystreaks.data.model.Streak
 import pt.ipt.mystreaks.data.model.Tag
+import pt.ipt.mystreaks.utils.setInfoTooltip
 
 class StreakAdapter(
     private val onStreakCheckChanged: (Streak, Boolean) -> Unit,
@@ -87,14 +88,20 @@ class StreakAdapter(
             btnArchive.setOnClickListener { swipeLayout.close(true); onArchiveClicked(streak) }
             btnDelete.setOnClickListener { swipeLayout.close(true); onDeleteClicked(streak) }
 
+            ivEdit.setInfoTooltip(R.string.tooltip_edit)
+            btnArchive.setInfoTooltip(R.string.tooltip_archive)
+            btnDelete.setInfoTooltip(R.string.tooltip_delete)
+
             swipeLayout.setOnActionsListener(object : SwipeLayout.SwipeActionsListener {
                 override fun onOpen(direction: Int, isContinuous: Boolean) {
+                    itemView.parent?.requestDisallowInterceptTouchEvent(true)
                     if (currentlyOpenLayout != swipeLayout) {
                         currentlyOpenLayout?.close(true)
                         currentlyOpenLayout = swipeLayout
                     }
                 }
                 override fun onClose() {
+                    itemView.parent?.requestDisallowInterceptTouchEvent(false)
                     if (currentlyOpenLayout == swipeLayout) currentlyOpenLayout = null
                 }
             })

@@ -12,6 +12,7 @@ import pt.ipt.mystreaks.data.AppDatabase
 import pt.ipt.mystreaks.data.model.AppLog
 import pt.ipt.mystreaks.data.repository.LogRepository
 import pt.ipt.mystreaks.databinding.ActivityLogsBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -37,6 +38,9 @@ class LogsActivity : AppCompatActivity() {
 
         // Botão Voltar
         binding.btnBack.setOnClickListener { finish() }
+        binding.btnBack.setInfoTooltip(getString(pt.ipt.mystreaks.R.string.cancel))
+        binding.btnExportLogs.setInfoTooltip(getString(pt.ipt.mystreaks.R.string.tooltip_backup))
+        binding.btnClearLogs.setInfoTooltip(getString(pt.ipt.mystreaks.R.string.tooltip_delete))
 
         // Configurar Lista (RecyclerView)
         val adapter = LogAdapter()

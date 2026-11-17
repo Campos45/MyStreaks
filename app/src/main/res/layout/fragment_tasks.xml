@@ -31,7 +31,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Tarefas 📝"
+                    android:text="@string/tasks_title"
                     android:textSize="24sp"
                     android:textColor="@color/text_primary"/>
 
@@ -76,7 +76,7 @@
                 android:insetBottom="0dp"
                 android:padding="0dp"
                 android:textSize="12sp"
-                android:text="Por Realizar" />
+                android:text="@string/tab_pending" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCompletedTasks"
@@ -88,7 +88,7 @@
                 android:insetBottom="0dp"
                 android:padding="0dp"
                 android:textSize="12sp"
-                android:text="Concluídas" />
+                android:text="@string/tab_completed" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnArchivedTasks"
@@ -100,22 +100,22 @@
                 android:insetBottom="0dp"
                 android:padding="0dp"
                 android:textSize="12sp"
-                android:text="Arquivadas" />
+                android:text="@string/tab_archived" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Pesquisar tarefa..."
+            android:hint="@string/search_tasks_hint"
             android:padding="12dp"
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="12dp"
             android:background="@drawable/widget_background"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="8dp"
-            android:textColor="@android:color/black"
-            android:textColorHint="#808080"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
             android:visibility="gone" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -172,10 +172,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="24dp"
-        android:text="Nova"
-        android:textColor="@color/surface"
+        android:text="@string/new_item"
+        android:textColor="@android:color/white"
         app:icon="@android:drawable/ic_input_add"
-        app:iconTint="@color/surface"
+        app:iconTint="@android:color/white"
         android:backgroundTint="@color/primary" />
 
     <com.airbnb.lottie.LottieAnimationView

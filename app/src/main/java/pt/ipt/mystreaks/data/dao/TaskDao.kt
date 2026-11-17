@@ -31,5 +31,12 @@ interface TaskDao {
     @Query("SELECT * FROM tasks_table")
     suspend fun getAllTasksSync(): List<Task>
 
+    @Query("SELECT * FROM tasks_table WHERE dueDate >= :startOfDay AND dueDate <= :endOfDay AND isArchived = 0 ORDER BY isCompleted ASC, priority DESC, id ASC")
+    fun getTasksByDateRange(startOfDay: Long, endOfDay: Long): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks_table WHERE dueDate >= :startOfDay AND dueDate <= :endOfDay AND isArchived = 0 AND isCompleted = 0")
+    suspend fun getPendingTasksByDateRangeSync(startOfDay: Long, endOfDay: Long): List<Task>
+
+    @Query("SELECT * FROM tasks_table WHERE dueDate IS NOT NULL AND isArchived = 0")
+    fun getAllTasksWithDueDate(): Flow<List<Task>>
 }

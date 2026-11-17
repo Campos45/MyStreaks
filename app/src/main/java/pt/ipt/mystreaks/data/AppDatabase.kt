@@ -9,6 +9,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import pt.ipt.mystreaks.data.model.AppLog
 import pt.ipt.mystreaks.data.dao.AppLogDao
+import pt.ipt.mystreaks.data.model.DiaryEntry
+import pt.ipt.mystreaks.data.dao.DiaryDao
 import pt.ipt.mystreaks.data.model.MyList
 import pt.ipt.mystreaks.data.dao.MyListDao
 import pt.ipt.mystreaks.data.model.Streak
@@ -18,8 +20,8 @@ import pt.ipt.mystreaks.data.dao.TagDao
 import pt.ipt.mystreaks.data.model.Task
 import pt.ipt.mystreaks.data.dao.TaskDao
 
-// 1. Adicionámos a Tag::class à lista de entidades e mudámos a versão para 2!
-@Database(entities = [Task::class, AppLog::class, Streak::class, Tag::class, MyList::class], version = 3, exportSchema = false)
+// 1. Adicionámos a Tag::class, MyList::class e DiaryEntry::class
+@Database(entities = [Task::class, AppLog::class, Streak::class, Tag::class, MyList::class, DiaryEntry::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -29,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tagDao(): TagDao // 2. Adicionámos o novo DAO
 
     abstract fun myListDao(): MyListDao
+    abstract fun diaryDao(): DiaryDao
 
     companion object {
         @Volatile
@@ -57,6 +60,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `tasks_table` ADD COLUMN `completionNote` TEXT")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `diary_entries` (
+                        `dateMillis` INTEGER PRIMARY KEY NOT NULL,
+                        `content` TEXT NOT NULL DEFAULT '',
+                        `updatedAt` INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -64,7 +80,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mystreaks_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

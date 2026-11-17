@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
@@ -18,6 +19,7 @@ import pt.ipt.mystreaks.R
 import pt.ipt.mystreaks.data.model.Tag
 import pt.ipt.mystreaks.data.model.Task
 import pt.ipt.mystreaks.databinding.ItemTaskBinding
+import pt.ipt.mystreaks.utils.setInfoTooltip
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -25,12 +27,13 @@ import java.util.Locale
 class TaskAdapter(
     private val onTaskUpdate: (Task) -> Unit,
     private val onEditClicked: (Task) -> Unit,
-    // NOVO: Ações para os botões do Swipe
     private val onArchiveClicked: (Task) -> Unit,
-    private val onDeleteClicked: (Task) -> Unit
+    private val onDeleteClicked: (Task) -> Unit,
+    private val onCompleteRequested: ((Task, () -> Unit) -> Unit)? = null
 ) : ListAdapter<Task, TaskAdapter.TaskViewHolder>(TaskComparator()) {
 
     private val expandedTasks = mutableSetOf<Int>()
+    private val expandedNotes = mutableSetOf<Int>()
     private var currentlyOpenLayout: SwipeLayout? = null
 
     // --- LISTA DE TAGS EM MEMÓRIA ---
@@ -52,6 +55,7 @@ class TaskAdapter(
 
     inner class TaskViewHolder(private val binding: ItemTaskBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(task: Task) {
+            val ctx = binding.root.context
             binding.tvTaskName.text = task.name
 
             // --- LÓGICA BLINDADA DE CORES DA TAG ---
@@ -90,13 +94,14 @@ class TaskAdapter(
             if (task.dueDate != null && !task.isCompleted) {
                 binding.tvDueDate.visibility = View.VISIBLE
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val formatted = sdf.format(Date(task.dueDate!!))
 
                 if (System.currentTimeMillis() > task.dueDate!!) {
                     binding.tvDueDate.setTextColor(Color.RED)
-                    binding.tvDueDate.text = "⚠️ Atrasado: ${sdf.format(Date(task.dueDate!!))}"
+                    binding.tvDueDate.text = ctx.getString(R.string.task_overdue, formatted)
                 } else {
                     binding.tvDueDate.setTextColor(Color.parseColor("#E65100"))
-                    binding.tvDueDate.text = "⏳ Prazo: ${sdf.format(Date(task.dueDate!!))}"
+                    binding.tvDueDate.text = ctx.getString(R.string.task_due, formatted)
                 }
             } else {
                 binding.tvDueDate.visibility = View.GONE
@@ -108,15 +113,49 @@ class TaskAdapter(
 
             if (task.isCompleted && task.completionDate != null) {
                 binding.tvCompletionDate.visibility = View.VISIBLE
-                val sdf = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault())
-                binding.tvCompletionDate.text = "Concluída em: ${sdf.format(Date(task.completionDate!!))}"
+                val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                binding.tvCompletionDate.text = ctx.getString(R.string.task_completed_at, sdf.format(Date(task.completionDate!!)))
                 binding.ivEdit.visibility = View.GONE
             } else {
                 binding.tvCompletionDate.visibility = View.GONE
                 binding.ivEdit.visibility = View.VISIBLE
             }
 
+            // --- NOTA DE CONCLUSÃO ---
+            if (task.isCompleted && !task.completionNote.isNullOrBlank()) {
+                binding.tvCompletionNote.visibility = View.VISIBLE
+                binding.tvCompletionNote.text = "${ctx.getString(R.string.completion_note_label)} ${task.completionNote}"
+            } else {
+                binding.tvCompletionNote.visibility = View.GONE
+            }
+
+            // --- NOTAS DETALHADAS EXPANSÍVEIS ---
+            if (!task.notes.isNullOrBlank()) {
+                binding.ivExpandNotes.visibility = View.VISIBLE
+                val isNotesExpanded = expandedNotes.contains(task.id)
+                binding.layoutNotes.visibility = if (isNotesExpanded) View.VISIBLE else View.GONE
+                binding.ivExpandNotes.rotation = if (isNotesExpanded) 180f else 0f
+                binding.tvNotesContent.text = task.notes
+
+                binding.ivExpandNotes.setOnClickListener {
+                    val pos = layoutPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        if (expandedNotes.contains(task.id)) expandedNotes.remove(task.id) else expandedNotes.add(task.id)
+                        notifyItemChanged(pos)
+                    }
+                }
+            } else {
+                binding.ivExpandNotes.visibility = View.GONE
+                binding.layoutNotes.visibility = View.GONE
+            }
+
             binding.ivEdit.setOnClickListener { currentlyOpenLayout?.close(true); onEditClicked(task) }
+
+            // Tooltips informativos
+            binding.ivEdit.setInfoTooltip(R.string.tooltip_edit)
+            binding.ivExpandNotes.setInfoTooltip(R.string.tooltip_expand_notes)
+            binding.ivExpand.setInfoTooltip(R.string.tooltip_expand_subtasks)
+            binding.cbTaskCompleted.setInfoTooltip(R.string.tooltip_complete_task)
 
             // --- LÓGICA DAS SUB-TAREFAS OTIMIZADA ---
             if (task.subTasks.isNotEmpty()) {
@@ -136,14 +175,12 @@ class TaskAdapter(
                 val currentChildCount = binding.layoutSubTasks.childCount
                 val targetChildCount = task.subTasks.size
 
-                // Remove as vistas excedentes se existirem mais do que as necessárias
                 if (currentChildCount > targetChildCount) {
                     binding.layoutSubTasks.removeViews(targetChildCount, currentChildCount - targetChildCount)
                 }
 
                 val inflater = LayoutInflater.from(binding.root.context)
                 task.subTasks.forEachIndexed { index, subTask ->
-                    // Reutiliza a CheckBox existente se possível, ou infla uma nova se necessário
                     val cbSubTask = if (index < currentChildCount) {
                         binding.layoutSubTasks.getChildAt(index) as CheckBox
                     } else {
@@ -152,7 +189,6 @@ class TaskAdapter(
                         newCb
                     }
 
-                    // Limpa o listener antigo antes de preencher os novos dados para evitar disparos acidentais
                     cbSubTask.setOnCheckedChangeListener(null)
                     cbSubTask.text = subTask.name
                     cbSubTask.isChecked = subTask.isCompleted
@@ -163,12 +199,22 @@ class TaskAdapter(
                         updatedSubTasks[index] = subTask.copy(isCompleted = isChecked)
 
                         val allCompleted = updatedSubTasks.all { it.isCompleted }
-                        val updatedTask = task.copy(
-                            subTasks = updatedSubTasks,
-                            isCompleted = allCompleted,
-                            completionDate = if (allCompleted) System.currentTimeMillis() else null
-                        )
-                        onTaskUpdate(updatedTask)
+                        if (allCompleted && !task.isCompleted && onCompleteRequested != null) {
+                            val candidateTask = task.copy(subTasks = updatedSubTasks)
+                            onCompleteRequested.invoke(candidateTask) {
+                                // Revert subtask checkbox if cancelled
+                                val pos = layoutPosition
+                                if (pos != RecyclerView.NO_POSITION) notifyItemChanged(pos)
+                            }
+                        } else {
+                            val updatedTask = task.copy(
+                                subTasks = updatedSubTasks,
+                                isCompleted = allCompleted,
+                                completionDate = if (allCompleted) System.currentTimeMillis() else null,
+                                completionNote = if (allCompleted) task.completionNote else null
+                            )
+                            onTaskUpdate(updatedTask)
+                        }
                     }
                 }
             } else {
@@ -179,13 +225,23 @@ class TaskAdapter(
 
             binding.cbTaskCompleted.setOnCheckedChangeListener { _, isChecked ->
                 currentlyOpenLayout?.close(true)
-                val updatedSubTasks = task.subTasks.map { it.copy(isCompleted = isChecked) }
-                val updatedTask = task.copy(
-                    isCompleted = isChecked,
-                    subTasks = updatedSubTasks,
-                    completionDate = if (isChecked) System.currentTimeMillis() else null
-                )
-                onTaskUpdate(updatedTask)
+                if (isChecked && onCompleteRequested != null) {
+                    val updatedSubTasks = task.subTasks.map { it.copy(isCompleted = true) }
+                    val candidateTask = task.copy(subTasks = updatedSubTasks)
+                    onCompleteRequested.invoke(candidateTask) {
+                        val pos = layoutPosition
+                        if (pos != RecyclerView.NO_POSITION) notifyItemChanged(pos)
+                    }
+                } else {
+                    val updatedSubTasks = task.subTasks.map { it.copy(isCompleted = isChecked) }
+                    val updatedTask = task.copy(
+                        isCompleted = isChecked,
+                        subTasks = updatedSubTasks,
+                        completionDate = if (isChecked) System.currentTimeMillis() else null,
+                        completionNote = if (isChecked) task.completionNote else null
+                    )
+                    onTaskUpdate(updatedTask)
+                }
             }
 
             // --- MAGIA DO SWIPE (ARRASTAR) ---
@@ -193,22 +249,39 @@ class TaskAdapter(
             val btnArchive: ImageView = itemView.findViewById(R.id.btnArchive)
             val btnDelete: ImageView = itemView.findViewById(R.id.btnDelete)
 
-            // Cliques nos botões do fundo
+            btnArchive.setInfoTooltip(R.string.tooltip_archive)
+            btnDelete.setInfoTooltip(R.string.tooltip_delete)
+
             btnArchive.setOnClickListener { swipeLayout.close(true); onArchiveClicked(task) }
             btnDelete.setOnClickListener { swipeLayout.close(true); onDeleteClicked(task) }
 
-            // Gestão de qual layout está aberto
             swipeLayout.setOnActionsListener(object : SwipeLayout.SwipeActionsListener {
                 override fun onOpen(direction: Int, isContinuous: Boolean) {
+                    itemView.parent?.requestDisallowInterceptTouchEvent(true)
                     if (currentlyOpenLayout != swipeLayout) {
                         currentlyOpenLayout?.close(true)
                         currentlyOpenLayout = swipeLayout
                     }
                 }
                 override fun onClose() {
+                    itemView.parent?.requestDisallowInterceptTouchEvent(false)
                     if (currentlyOpenLayout == swipeLayout) currentlyOpenLayout = null
                 }
             })
+
+            swipeLayout.setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_MOVE -> {
+                        if (currentlyOpenLayout == swipeLayout) {
+                            v.parent?.requestDisallowInterceptTouchEvent(true)
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        v.parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+                false
+            }
         }
     }
 

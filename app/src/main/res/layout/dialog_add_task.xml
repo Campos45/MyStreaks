@@ -14,10 +14,10 @@
             android:id="@+id/tvDialogTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Nova Tarefa"
+            android:text="@string/new_task_title"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
+            android:textColor="@color/text_primary"
             android:layout_marginBottom="16dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -31,9 +31,8 @@
                 android:layout_height="wrap_content"
                 android:hint="Nome da Tarefa"
                 android:inputType="textCapSentences"
-                android:textColor="@android:color/black"
-                android:textColorHint="#757575"
-                android:backgroundTint="@color/black"/>
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -88,9 +87,8 @@
                 android:lines="3"
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
-                android:textColor="@android:color/black"
-                android:textColorHint="#757575"
-                android:backgroundTint="@color/black"/>
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"/>
 
         </com.google.android.material.textfield.TextInputLayout>
 

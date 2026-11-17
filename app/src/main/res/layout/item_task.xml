@@ -146,6 +146,16 @@
                         app:tint="@color/text_secondary"/>
 
                     <ImageView
+                        android:id="@+id/ivExpandNotes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@android:drawable/arrow_down_float"
+                        android:padding="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="@color/primary"
+                        android:visibility="gone"/>
+
+                    <ImageView
                         android:id="@+id/ivExpand"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -166,6 +176,34 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layoutNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_notes_box"
+                android:padding="10dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvNotesLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/notes_label"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"/>
+
+                <TextView
+                    android:id="@+id/tvNotesContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/layoutSubTasks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -181,6 +219,18 @@
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginTop="8dp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/tvCompletionNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textStyle="italic"
+                android:textColor="@color/text_primary"
+                android:background="@drawable/bg_notes_box"
+                android:padding="8dp"
+                android:layout_marginTop="6dp"
                 android:visibility="gone"/>
 
         </LinearLayout>

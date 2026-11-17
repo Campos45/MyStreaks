@@ -1,14 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyStreaks" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
+    <style name="Theme.MyStreaks" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
 
-        <item name="colorSurface">@android:color/white</item>
-        <item name="colorOnSurface">@android:color/black</item>
-        <item name="colorOutline">@color/black</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOutline">#404040</item>
 
         <item name="editTextStyle">@style/Widget.AppCompat.EditText</item>
-        <item name="android:editTextColor">@android:color/black</item>
-        <item name="android:textColorHint">#757575</item>
+        <item name="android:editTextColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
     </style>
 </resources>

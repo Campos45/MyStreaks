@@ -23,6 +23,18 @@ object DateHelper {
         return toLocalDate(millis).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 
+    fun startOfDayMillis(date: LocalDate): Long {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
+    fun endOfDayMillis(date: LocalDate): Long {
+        return date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1L
+    }
+
+    fun endOfDayMillis(millis: Long = System.currentTimeMillis()): Long {
+        return endOfDayMillis(toLocalDate(millis))
+    }
+
     fun formatDate(millis: Long): String {
         return toLocalDate(millis).format(dateFormatter)
     }

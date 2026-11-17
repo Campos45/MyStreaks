@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyStreaks</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_streaks">Seriler</string>
+    <string name="nav_tasks">Görevler</string>
+    <string name="nav_diary">Günlük</string>
+    <string name="nav_lists">Listeler</string>
+    <string name="nav_settings">Ayarlar</string>
+
+    <!-- Common -->
+    <string name="save">Kaydet</string>
+    <string name="cancel">İptal</string>
+    <string name="delete">Sil</string>
+    <string name="archive">Arşivle</string>
+    <string name="undo">Geri Al</string>
+    <string name="ok">Tamam</string>
+    <string name="new_item">Yeni</string>
+    <string name="today">Bugün</string>
+    <string name="tomorrow">Yarın</string>
+    <string name="yesterday">Dün</string>
+
+    <!-- Streaks -->
+    <string name="streaks_title">Seriler 🔥</string>
+    <string name="tab_active">Aktif</string>
+    <string name="tab_archived">Arşiv</string>
+    <string name="search_streaks_hint">Aktivite ara...</string>
+    <string name="streak_empty_title">Aktivite yok</string>
+    <string name="streak_empty_desc">İlk serini başlatmak için \'Yeni\'ye dokun!</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Görevler 📝</string>
+    <string name="tab_pending">Yapılacak</string>
+    <string name="tab_completed">Tamamlanan</string>
+    <string name="search_tasks_hint">Görev ara...</string>
+    <string name="task_empty_title">Görev Yok</string>
+    <string name="task_empty_desc">Görev eklemek için \'Yeni\'ye dokun!</string>
+    <string name="new_task_title">Yeni Görev</string>
+    <string name="edit_task_title">Görevi Düzenle</string>
+    <string name="notes_label">📝 Notlar:</string>
+    <string name="completion_note_label">✅ Tamamlama Notu:</string>
+    <string name="completion_note_prompt_title">Görev Tamamlandı! 🎉</string>
+    <string name="completion_note_prompt_msg">Bir tamamlama notu eklemek ister misin? (isteğe bağlı)</string>
+    <string name="completion_note_prompt_hint">Örn: Süresinden önce bitti, her şey onaylandı...</string>
+    <string name="btn_complete_with_note">Tamamla</string>
+    <string name="btn_complete_no_note">Notsuz</string>
+    <string name="task_completed_at">Tamamlandı: %1$s</string>
+    <string name="task_overdue">⚠️ Gecikti: %1$s</string>
+    <string name="task_due">⏳ Son Tarih: %1$s</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Listelerim</string>
+    <string name="tab_archive">Arşiv</string>
+    <string name="search_lists_hint">Liste ara...</string>
+    <string name="new_list">Yeni Liste</string>
+    <string name="empty_lists_title">Liste Yok</string>
+    <string name="empty_lists_desc">İlk listeni oluşturmak için düğmeye dokun!</string>
+
+    <!-- Diary -->
+    <string name="diary_title">Günlük 📖</string>
+    <string name="diary_today_btn">Bugün</string>
+    <string name="diary_notes_section">Günün Notları</string>
+    <string name="diary_notes_hint">Bu gün için notlarını, düşüncelerini veya planını buraya yaz...</string>
+    <string name="diary_save_note">Notu Kaydet</string>
+    <string name="diary_note_saved">Günlük notu kaydedildi! 📖</string>
+    <string name="diary_tasks_section">Planlanan Görevler</string>
+    <string name="diary_no_tasks">Bu gün için planlanmış görev yok.</string>
+    <string name="diary_add_task">Bu gün için Yeni Görev</string>
+    <string name="diary_notification_title">Bugünün Ajandası 📖</string>
+    <string name="diary_notification_tasks">Bugün için planlanmış %1$d görevin var!</string>
+    <string name="diary_notification_note">Bugünün günlüğünde kayıtlı notların var.</string>
+    <string name="diary_day_mon">Pzt</string>
+    <string name="diary_day_tue">Sal</string>
+    <string name="diary_day_wed">Çar</string>
+    <string name="diary_day_thu">Per</string>
+    <string name="diary_day_fri">Cum</string>
+    <string name="diary_day_sat">Cmt</string>
+    <string name="diary_day_sun">Paz</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ayarlar ⚙️</string>
+    <string name="medals_title">Kupalarım</string>
+    <string name="logs_title">Sistem Kayıtları</string>
+    <string name="backup_title">Yedekle ve Geri Yükle (JSON)</string>
+    <string name="appearance_section">Görünüm ve Dil</string>
+    <string name="dark_mode_title">Karanlık Mod</string>
+    <string name="dark_mode_desc">Açık ve koyu tema arasında geçiş yap</string>
+    <string name="language_title">Dil</string>
+    <string name="select_language">Dil Seçin</string>
+    <string name="categories_section">Kategori Yönetimi</string>
+    <string name="categories_streaks">Seri Kategorileri</string>
+    <string name="categories_tasks">Görev Kategorileri</string>
+    <string name="categories_lists">Liste Kategorileri</string>
+    <string name="language_changed">Dil değiştirildi!</string>
+
+    <!-- Tooltips / Info Notes -->
+    <string name="tooltip_add_task">Öncelik, son tarih ve notlarla yeni bir görev oluştur</string>
+    <string name="tooltip_add_streak">Günlük, haftalık veya aylık yeni bir seri oluştur</string>
+    <string name="tooltip_add_list">Yeni bir not veya liste oluştur</string>
+    <string name="tooltip_filter">Gösterilen öğeleri filtrele veya sırala</string>
+    <string name="tooltip_search">Arama çubuğunu göster veya gizle</string>
+    <string name="tooltip_edit">Bu öğenin ayrıntılarını düzenle</string>
+    <string name="tooltip_expand_subtasks">Alt görevleri genişlet veya daralt</string>
+    <string name="tooltip_expand_notes">Detaylı notları genişlet veya daralt</string>
+    <string name="tooltip_archive">Bu öğeyi arşivle veya geri yükle</string>
+    <string name="tooltip_delete">Bu öğeyi kalıcı olarak sil</string>
+    <string name="tooltip_complete_task">Görevi tamamlandı olarak işaretle ve not ekle</string>
+    <string name="tooltip_tab_pending">Yapılacak görevleri görüntüle</string>
+    <string name="tooltip_tab_completed">Tamamlanan görevleri görüntüle</string>
+    <string name="tooltip_tab_archived">Arşivlenmiş öğeleri görüntüle</string>
+    <string name="tooltip_tab_active">Aktif öğeleri görüntüle</string>
+    <string name="tooltip_prev_month">Takvimde önceki ayı görüntüle</string>
+    <string name="tooltip_next_month">Takvimde sonraki ayı görüntüle</string>
+    <string name="tooltip_today">Hızlıca bugüne dön</string>
+    <string name="tooltip_save_diary">Bu günün notlarını günlüğe kaydet</string>
+    <string name="tooltip_diary_add_task">Bu gün için son tarihli görev oluştur</string>
+    <string name="tooltip_medals">Kazanılan madalya ve kupaları gör</string>
+    <string name="tooltip_logs">Uygulama etkinlik kaydını görüntüle</string>
+    <string name="tooltip_backup">JSON yedeklemesi dışa veya içe aktar</string>
+    <string name="tooltip_dark_mode">Karanlık modu aç veya kapat</string>
+    <string name="tooltip_language">Uygulama dilini seç</string>
+    <string name="tooltip_manage_tags">Kategorileri oluştur, düzenle veya sil</string>
+    <string name="tooltip_nav_streaks">Seriler ekranına git</string>
+    <string name="tooltip_nav_tasks">Görevler ekranına git</string>
+    <string name="tooltip_nav_diary">Günlük ve Ajandana git</string>
+    <string name="tooltip_nav_lists">Listelerine ve Notlarına git</string>
+    <string name="tooltip_nav_settings">Uygulama Ayarlarına git</string>
+</resources>

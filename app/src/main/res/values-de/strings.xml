@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyStreaks</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_streaks">Streaks</string>
+    <string name="nav_tasks">Aufgaben</string>
+    <string name="nav_diary">Tagebuch</string>
+    <string name="nav_lists">Listen</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Common -->
+    <string name="save">Speichern</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="archive">Archivieren</string>
+    <string name="undo">Rückgängig</string>
+    <string name="ok">OK</string>
+    <string name="new_item">Neu</string>
+    <string name="today">Heute</string>
+    <string name="tomorrow">Morgen</string>
+    <string name="yesterday">Gestern</string>
+
+    <!-- Streaks -->
+    <string name="streaks_title">Streaks 🔥</string>
+    <string name="tab_active">Aktiv</string>
+    <string name="tab_archived">Archiviert</string>
+    <string name="search_streaks_hint">Aktivität suchen...</string>
+    <string name="streak_empty_title">Keine Aktivitäten</string>
+    <string name="streak_empty_desc">Tippe auf \'Neu\', um deine erste Streak zu starten!</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Aufgaben 📝</string>
+    <string name="tab_pending">Offen</string>
+    <string name="tab_completed">Erledigt</string>
+    <string name="search_tasks_hint">Aufgabe suchen...</string>
+    <string name="task_empty_title">Keine Aufgaben</string>
+    <string name="task_empty_desc">Tippe auf \'Neu\', um eine Aufgabe hinzuzufügen!</string>
+    <string name="new_task_title">Neue Aufgabe</string>
+    <string name="edit_task_title">Aufgabe bearbeiten</string>
+    <string name="notes_label">📝 Notizen:</string>
+    <string name="completion_note_label">✅ Abschlussnotiz:</string>
+    <string name="completion_note_prompt_title">Aufgabe erledigt! 🎉</string>
+    <string name="completion_note_prompt_msg">Möchtest du eine Abschlussnotiz hinzufügen? (optional)</string>
+    <string name="completion_note_prompt_hint">Z.B.: Rechtzeitig fertiggestellt, alles geprüft...</string>
+    <string name="btn_complete_with_note">Abschließen</string>
+    <string name="btn_complete_no_note">Ohne Notiz</string>
+    <string name="task_completed_at">Erledigt am: %1$s</string>
+    <string name="task_overdue">⚠️ Überfällig: %1$s</string>
+    <string name="task_due">⏳ Frist: %1$s</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Meine Listen</string>
+    <string name="tab_archive">Archiv</string>
+    <string name="search_lists_hint">Liste suchen...</string>
+    <string name="new_list">Neue Liste</string>
+    <string name="empty_lists_title">Keine Listen</string>
+    <string name="empty_lists_desc">Tippe auf die Schaltfläche, um deine erste Liste zu erstellen!</string>
+
+    <!-- Diary -->
+    <string name="diary_title">Tagebuch 📖</string>
+    <string name="diary_today_btn">Heute</string>
+    <string name="diary_notes_section">Tagesnotizen</string>
+    <string name="diary_notes_hint">Schreibe hier deine Notizen, Gedanken oder Pläne für diesen Tag...</string>
+    <string name="diary_save_note">Notiz speichern</string>
+    <string name="diary_note_saved">Tagebuchnotiz gespeichert! 📖</string>
+    <string name="diary_tasks_section">Geplante Aufgaben</string>
+    <string name="diary_no_tasks">Keine Aufgaben für diesen Tag geplant.</string>
+    <string name="diary_add_task">Neue Aufgabe für diesen Tag</string>
+    <string name="diary_notification_title">Heutige Agenda 📖</string>
+    <string name="diary_notification_tasks">Du hast %1$d Aufgabe(n) für heute geplant!</string>
+    <string name="diary_notification_note">Du hast Notizen in deinem heutigen Tagebuch.</string>
+    <string name="diary_day_mon">Mo</string>
+    <string name="diary_day_tue">Di</string>
+    <string name="diary_day_wed">Mi</string>
+    <string name="diary_day_thu">Do</string>
+    <string name="diary_day_fri">Fr</string>
+    <string name="diary_day_sat">Sa</string>
+    <string name="diary_day_sun">So</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen ⚙️</string>
+    <string name="medals_title">Meine Trophäen</string>
+    <string name="logs_title">Systemprotokoll</string>
+    <string name="backup_title">Backup &amp; Wiederherstellung (JSON)</string>
+    <string name="appearance_section">Darstellung &amp; Sprache</string>
+    <string name="dark_mode_title">Dunkelmodus</string>
+    <string name="dark_mode_desc">Zwischen hellem und dunklem Design wechseln</string>
+    <string name="language_title">Sprache</string>
+    <string name="select_language">Sprache auswählen</string>
+    <string name="categories_section">Kategorieverwaltung</string>
+    <string name="categories_streaks">Streak-Kategorien</string>
+    <string name="categories_tasks">Aufgaben-Kategorien</string>
+    <string name="categories_lists">Listen-Kategorien</string>
+    <string name="language_changed">Sprache geändert!</string>
+
+    <!-- Tooltips / Info Notes -->
+    <string name="tooltip_add_task">Neue Aufgabe mit Priorität, Frist und Notizen erstellen</string>
+    <string name="tooltip_add_streak">Neue tägliche, wöchentliche oder monatliche Streak erstellen</string>
+    <string name="tooltip_add_list">Neue Notiz oder Liste erstellen</string>
+    <string name="tooltip_filter">Angezeigte Einträge filtern oder sortieren</string>
+    <string name="tooltip_search">Suchleiste ein- oder ausblenden</string>
+    <string name="tooltip_edit">Details dieses Eintrags bearbeiten</string>
+    <string name="tooltip_expand_subtasks">Unteraufgaben ein- oder ausklappen</string>
+    <string name="tooltip_expand_notes">Ausführliche Notizen ein- oder ausklappen</string>
+    <string name="tooltip_archive">Diesen Eintrag archivieren oder wiederherstellen</string>
+    <string name="tooltip_delete">Diesen Eintrag dauerhaft löschen</string>
+    <string name="tooltip_complete_task">Aufgabe als erledigt markieren und Notiz hinzufügen</string>
+    <string name="tooltip_tab_pending">Offene Aufgaben anzeigen</string>
+    <string name="tooltip_tab_completed">Erledigte Aufgaben anzeigen</string>
+    <string name="tooltip_tab_archived">Archivierte Einträge anzeigen</string>
+    <string name="tooltip_tab_active">Aktive Einträge anzeigen</string>
+    <string name="tooltip_prev_month">Vorherigen Monat im Kalender anzeigen</string>
+    <string name="tooltip_next_month">Nächsten Monat im Kalender anzeigen</string>
+    <string name="tooltip_today">Schnell zu heute zurückkehren</string>
+    <string name="tooltip_save_diary">Notizen dieses Tages im Tagebuch speichern</string>
+    <string name="tooltip_diary_add_task">Aufgabe mit Fälligkeit an diesem Tag erstellen</string>
+    <string name="tooltip_medals">Freigeschaltete Medaillen und Trophäen anzeigen</string>
+    <string name="tooltip_logs">Aktivitätsprotokoll der App anzeigen</string>
+    <string name="tooltip_backup">JSON-Backup exportieren oder importieren</string>
+    <string name="tooltip_dark_mode">Dunkelmodus aktivieren oder deaktivieren</string>
+    <string name="tooltip_language">Sprache der App wählen</string>
+    <string name="tooltip_manage_tags">Kategorien erstellen, bearbeiten oder entfernen</string>
+    <string name="tooltip_nav_streaks">Zur Streaks-Ansicht wechseln</string>
+    <string name="tooltip_nav_tasks">Zur Aufgaben-Ansicht wechseln</string>
+    <string name="tooltip_nav_diary">Zum Tagebuch und Kalender wechseln</string>
+    <string name="tooltip_nav_lists">Zu deinen Listen und Notizen wechseln</string>
+    <string name="tooltip_nav_settings">Zu den App-Einstellungen wechseln</string>
+</resources>

@@ -7,6 +7,11 @@ import pt.ipt.mystreaks.data.model.Task
 class TaskRepository(private val taskDao: TaskDao) {
     val pendingTasks: Flow<List<Task>> = taskDao.getPendingTasks()
     val completedTasks: Flow<List<Task>> = taskDao.getCompletedTasks()
+    val allTasksWithDueDate: Flow<List<Task>> = taskDao.getAllTasksWithDueDate()
+
+    fun getTasksByDateRange(startOfDay: Long, endOfDay: Long): Flow<List<Task>> {
+        return taskDao.getTasksByDateRange(startOfDay, endOfDay)
+    }
 
     suspend fun insert(task: Task): Long { return taskDao.insert(task) }
     suspend fun update(task: Task) { taskDao.update(task) }

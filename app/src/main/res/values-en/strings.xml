@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyStreaks</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_streaks">Streaks</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_diary">Diary</string>
+    <string name="nav_lists">Lists</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="archive">Archive</string>
+    <string name="undo">Undo</string>
+    <string name="ok">OK</string>
+    <string name="new_item">New</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="yesterday">Yesterday</string>
+
+    <!-- Streaks -->
+    <string name="streaks_title">Streaks 🔥</string>
+    <string name="tab_active">Active</string>
+    <string name="tab_archived">Archived</string>
+    <string name="search_streaks_hint">Search activity...</string>
+    <string name="streak_empty_title">No activities</string>
+    <string name="streak_empty_desc">Tap \'New\' to start your first streak!</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Tasks 📝</string>
+    <string name="tab_pending">Pending</string>
+    <string name="tab_completed">Completed</string>
+    <string name="search_tasks_hint">Search task...</string>
+    <string name="task_empty_title">No Tasks</string>
+    <string name="task_empty_desc">Tap \'New\' to add a task!</string>
+    <string name="new_task_title">New Task</string>
+    <string name="edit_task_title">Edit Task</string>
+    <string name="notes_label">📝 Notes:</string>
+    <string name="completion_note_label">✅ Completion Note:</string>
+    <string name="completion_note_prompt_title">Task Completed! 🎉</string>
+    <string name="completion_note_prompt_msg">Would you like to add a completion note? (optional)</string>
+    <string name="completion_note_prompt_hint">E.g.: Finished ahead of schedule, all approved...</string>
+    <string name="btn_complete_with_note">Complete</string>
+    <string name="btn_complete_no_note">No note</string>
+    <string name="task_completed_at">Completed on: %1$s</string>
+    <string name="task_overdue">⚠️ Overdue: %1$s</string>
+    <string name="task_due">⏳ Due: %1$s</string>
+
+    <!-- Lists -->
+    <string name="lists_title">My Lists</string>
+    <string name="tab_archive">Archive</string>
+    <string name="search_lists_hint">Search list...</string>
+    <string name="new_list">New List</string>
+    <string name="empty_lists_title">No Lists</string>
+    <string name="empty_lists_desc">Tap the button to create your first list!</string>
+
+    <!-- Diary -->
+    <string name="diary_title">Diary 📖</string>
+    <string name="diary_today_btn">Today</string>
+    <string name="diary_notes_section">Daily Notes</string>
+    <string name="diary_notes_hint">Write your notes, thoughts, or plan for this day...</string>
+    <string name="diary_save_note">Save Note</string>
+    <string name="diary_note_saved">Diary note saved! 📖</string>
+    <string name="diary_tasks_section">Scheduled Tasks</string>
+    <string name="diary_no_tasks">No tasks scheduled for this day.</string>
+    <string name="diary_add_task">New Task for this day</string>
+    <string name="diary_notification_title">Today\'s Agenda 📖</string>
+    <string name="diary_notification_tasks">You have %1$d task(s) scheduled for today!</string>
+    <string name="diary_notification_note">You have notes written in today\'s diary.</string>
+    <string name="diary_day_mon">Mon</string>
+    <string name="diary_day_tue">Tue</string>
+    <string name="diary_day_wed">Wed</string>
+    <string name="diary_day_thu">Thu</string>
+    <string name="diary_day_fri">Fri</string>
+    <string name="diary_day_sat">Sat</string>
+    <string name="diary_day_sun">Sun</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings ⚙️</string>
+    <string name="medals_title">My Trophies</string>
+    <string name="logs_title">System Logs</string>
+    <string name="backup_title">Backup &amp; Restore (JSON)</string>
+    <string name="appearance_section">Appearance &amp; Language</string>
+    <string name="dark_mode_title">Dark Mode</string>
+    <string name="dark_mode_desc">Switch between light and dark theme</string>
+    <string name="language_title">Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="categories_section">Category Management</string>
+    <string name="categories_streaks">Streak Categories</string>
+    <string name="categories_tasks">Task Categories</string>
+    <string name="categories_lists">List Categories</string>
+    <string name="language_changed">Language updated!</string>
+
+    <!-- Tooltips / Info Notes -->
+    <string name="tooltip_add_task">Create a new task with priority, due date, and notes</string>
+    <string name="tooltip_add_streak">Create a new daily, weekly, or monthly streak</string>
+    <string name="tooltip_add_list">Create a new note or list</string>
+    <string name="tooltip_filter">Filter or sort displayed items</string>
+    <string name="tooltip_search">Show or hide the search bar</string>
+    <string name="tooltip_edit">Edit details of this item</string>
+    <string name="tooltip_expand_subtasks">Expand or collapse subtasks</string>
+    <string name="tooltip_expand_notes">Expand or collapse detailed notes</string>
+    <string name="tooltip_archive">Archive or restore this item</string>
+    <string name="tooltip_delete">Permanently delete this item</string>
+    <string name="tooltip_complete_task">Mark task as completed and add a note</string>
+    <string name="tooltip_tab_pending">View pending tasks</string>
+    <string name="tooltip_tab_completed">View completed tasks</string>
+    <string name="tooltip_tab_archived">View archived items</string>
+    <string name="tooltip_tab_active">View active items</string>
+    <string name="tooltip_prev_month">View previous month in calendar</string>
+    <string name="tooltip_next_month">View next month in calendar</string>
+    <string name="tooltip_today">Jump quickly back to today</string>
+    <string name="tooltip_save_diary">Save this day\'s notes to the diary</string>
+    <string name="tooltip_diary_add_task">Create a task due on this day</string>
+    <string name="tooltip_medals">View unlocked medals and trophies</string>
+    <string name="tooltip_logs">View the app activity log</string>
+    <string name="tooltip_backup">Export or import a JSON backup</string>
+    <string name="tooltip_dark_mode">Enable or disable dark mode</string>
+    <string name="tooltip_language">Choose the application language</string>
+    <string name="tooltip_manage_tags">Create, edit, or remove categories</string>
+    <string name="tooltip_nav_streaks">Go to your Streaks screen</string>
+    <string name="tooltip_nav_tasks">Go to your Tasks screen</string>
+    <string name="tooltip_nav_diary">Go to your Diary &amp; Agenda</string>
+    <string name="tooltip_nav_lists">Go to your Lists &amp; Notes</string>
+    <string name="tooltip_nav_settings">Go to Application Settings</string>
+</resources>
