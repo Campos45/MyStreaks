@@ -115,9 +115,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleOpenTabIntent(intent: Intent?) {
-        val tab = intent?.getIntExtra(EXTRA_OPEN_TAB, -1) ?: -1
+        if (intent == null) return
+        val tab = intent.getIntExtra(EXTRA_OPEN_TAB, -1).let {
+            if (it != -1) it else intent.getStringExtra(EXTRA_OPEN_TAB)?.toIntOrNull() ?: -1
+        }
         if (tab in TAB_STREAKS..TAB_SETTINGS) {
             binding.viewPager.setCurrentItem(tab, false)
+        }
+
+        val action = intent.getStringExtra(EXTRA_ACTION)
+        if (action != null) {
+            when (action) {
+                ACTION_NEW_STREAK -> {
+                    binding.viewPager.setCurrentItem(TAB_STREAKS, false)
+                    binding.viewPager.postDelayed({
+                        val fragment = supportFragmentManager.findFragmentByTag("f$TAB_STREAKS")
+                        (fragment as? StreaksFragment)?.showAddStreakDialog()
+                    }, 300)
+                }
+                ACTION_NEW_TASK -> {
+                    binding.viewPager.setCurrentItem(TAB_TASKS, false)
+                    binding.viewPager.postDelayed({
+                        val fragment = supportFragmentManager.findFragmentByTag("f$TAB_TASKS")
+                        (fragment as? TasksFragment)?.showAddTaskDialog()
+                    }, 300)
+                }
+                ACTION_NEW_LIST -> {
+                    startActivity(Intent(this, pt.ipt.mystreaks.ui.lists.EditListActivity::class.java))
+                }
+            }
         }
     }
 
@@ -138,6 +164,10 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_OPEN_TAB = "EXTRA_OPEN_TAB"
+        const val EXTRA_ACTION = "EXTRA_ACTION"
+        const val ACTION_NEW_STREAK = "ACTION_NEW_STREAK"
+        const val ACTION_NEW_TASK = "ACTION_NEW_TASK"
+        const val ACTION_NEW_LIST = "ACTION_NEW_LIST"
         const val TAB_STREAKS = 0
         const val TAB_TASKS = 1
         const val TAB_DIARY = 2

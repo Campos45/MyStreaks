@@ -126,4 +126,30 @@
     <string name="tooltip_nav_diary">Zum Tagebuch und Kalender wechseln</string>
     <string name="tooltip_nav_lists">Zu deinen Listen und Notizen wechseln</string>
     <string name="tooltip_nav_settings">Zu den App-Einstellungen wechseln</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_new_streak">Neue Streak</string>
+    <string name="shortcut_new_task">Neue Aufgabe</string>
+    <string name="shortcut_new_list">Neue Liste</string>
+
+    <!-- Diary Widget -->
+    <string name="widget_diary_title">Heutiges Tagebuch 📖</string>
+    <string name="widget_diary_no_notes">Keine Notizen für heute geschrieben</string>
+    <string name="widget_diary_no_tasks">Keine Aufgaben geplant</string>
+    <string name="widget_diary_tasks_count">%1$d offene Aufgabe(n)</string>
+
+    <!-- List Editor Page -->
+    <string name="edit_list_title">Liste bearbeiten</string>
+    <string name="list_title_hint">Listentitel</string>
+    <string name="list_content_hint">Schreibe hier den Inhalt deiner Notiz oder Liste...</string>
+    <string name="list_saved">Liste gespeichert! 📋</string>
+    <string name="list_deleted">Liste gelöscht 🗑️</string>
+    <string name="list_archived">Liste archiviert 📁</string>
+    <string name="list_unarchived">Liste wiederhergestellt 📋</string>
+    <string name="list_pinned">Liste angepinnt 📌</string>
+    <string name="list_unpinned">Liste gelöst</string>
+    <string name="list_delete_confirm_title">Liste löschen?</string>
+    <string name="list_delete_confirm_msg">Bist du sicher, dass du diese Liste dauerhaft löschen möchtest?</string>
+    <string name="tooltip_pin">Oben anpinnen oder lösen</string>
+    <string name="tooltip_color">Hintergrundfarbe der Liste ändern</string>
 </resources>

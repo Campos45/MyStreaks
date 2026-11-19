@@ -126,4 +126,30 @@
     <string name="tooltip_nav_diary">Vai al tuo Diario e Agenda</string>
     <string name="tooltip_nav_lists">Vai alle tue Liste e Note</string>
     <string name="tooltip_nav_settings">Vai alle Impostazioni dell\'app</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_new_streak">Nuova Serie</string>
+    <string name="shortcut_new_task">Nuova Attività</string>
+    <string name="shortcut_new_list">Nuova Lista</string>
+
+    <!-- Diary Widget -->
+    <string name="widget_diary_title">Diario di Oggi 📖</string>
+    <string name="widget_diary_no_notes">Nessuna nota scritta per oggi</string>
+    <string name="widget_diary_no_tasks">Nessuna attività programmata</string>
+    <string name="widget_diary_tasks_count">%1$d attività in attesa</string>
+
+    <!-- List Editor Page -->
+    <string name="edit_list_title">Modifica Lista</string>
+    <string name="list_title_hint">Titolo della Lista</string>
+    <string name="list_content_hint">Scrivi qui il contenuto della tua nota o lista...</string>
+    <string name="list_saved">Lista salvata! 📋</string>
+    <string name="list_deleted">Lista eliminata 🗑️</string>
+    <string name="list_archived">Lista archiviata 📁</string>
+    <string name="list_unarchived">Lista ripristinata 📋</string>
+    <string name="list_pinned">Lista fissata 📌</string>
+    <string name="list_unpinned">Lista non fissata</string>
+    <string name="list_delete_confirm_title">Eliminare la Lista?</string>
+    <string name="list_delete_confirm_msg">Sei sicuro di voler eliminare definitivamente questa lista?</string>
+    <string name="tooltip_pin">Fissa o rimuovi in alto</string>
+    <string name="tooltip_color">Cambia colore di sfondo della lista</string>
 </resources>

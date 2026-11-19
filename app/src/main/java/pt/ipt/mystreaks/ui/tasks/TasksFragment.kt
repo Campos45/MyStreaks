@@ -236,6 +236,7 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
 
     private fun handleTaskUpdated(updatedTask: Task) {
         viewModel.update(updatedTask)
+        pt.ipt.mystreaks.widget.DiaryWidgetProvider.triggerUpdate(requireContext())
         if (updatedTask.isCompleted) {
             cancelTaskAlarm(updatedTask.id, updatedTask.name)
             if (!updatedTask.isArchived) {
@@ -301,7 +302,7 @@ class TasksFragment : Fragment(R.layout.fragment_tasks) {
         }
     }
 
-    private fun showAddTaskDialog(taskToEdit: Task? = null) {
+    fun showAddTaskDialog(taskToEdit: Task? = null) {
         val dialogBinding = DialogAddTaskBinding.inflate(layoutInflater)
         val isEditing = taskToEdit != null
         var selectedDueDate: Long? = taskToEdit?.dueDate

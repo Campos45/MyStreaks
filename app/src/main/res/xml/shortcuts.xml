@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="shortcut_new_streak"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_streak"
+        android:shortcutShortLabel="@string/shortcut_new_streak"
+        android:shortcutLongLabel="@string/shortcut_new_streak">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pt.ipt.mystreaks"
+            android:targetClass="pt.ipt.mystreaks.ui.main.MainActivity">
+            <extra android:name="EXTRA_OPEN_TAB" android:value="0" />
+            <extra android:name="EXTRA_ACTION" android:value="ACTION_NEW_STREAK" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_new_task"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_task"
+        android:shortcutShortLabel="@string/shortcut_new_task"
+        android:shortcutLongLabel="@string/shortcut_new_task">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pt.ipt.mystreaks"
+            android:targetClass="pt.ipt.mystreaks.ui.main.MainActivity">
+            <extra android:name="EXTRA_OPEN_TAB" android:value="1" />
+            <extra android:name="EXTRA_ACTION" android:value="ACTION_NEW_TASK" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_new_list"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_list"
+        android:shortcutShortLabel="@string/shortcut_new_list"
+        android:shortcutLongLabel="@string/shortcut_new_list">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pt.ipt.mystreaks"
+            android:targetClass="pt.ipt.mystreaks.ui.main.MainActivity">
+            <extra android:name="EXTRA_OPEN_TAB" android:value="3" />
+        </intent>
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pt.ipt.mystreaks"
+            android:targetClass="pt.ipt.mystreaks.ui.lists.EditListActivity" />
+    </shortcut>
+
+</shortcuts>

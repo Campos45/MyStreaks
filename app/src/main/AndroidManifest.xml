@@ -25,8 +25,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
+        <activity android:name=".ui.lists.EditListActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.logs.LogsActivity" android:exported="false" />
         <activity android:name=".ui.medals.MedalsActivity" android:exported="false" />
 
@@ -35,6 +39,13 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_info" />
+        </receiver>
+
+        <receiver android:name=".widget.DiaryWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/diary_widget_info" />
         </receiver>
 
         <service android:name=".widget.StreakWidgetService"

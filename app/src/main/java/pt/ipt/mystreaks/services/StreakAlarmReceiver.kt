@@ -114,7 +114,8 @@ class StreakAlarmReceiver : BroadcastReceiver() {
         }
 
         val mainIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_TAB, MainActivity.TAB_STREAKS)
         }
         val pendingIntent = PendingIntent.getActivity(
             context, streak.id, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

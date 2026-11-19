@@ -231,7 +231,7 @@ class StreaksFragment : Fragment(R.layout.fragment_streaks) {
         binding.layoutEmptyState.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun showAddStreakDialog(streakToEdit: Streak? = null) {
+    fun showAddStreakDialog(streakToEdit: Streak? = null) {
         val dialogBinding = pt.ipt.mystreaks.databinding.DialogAddStreakBinding.inflate(layoutInflater)
         val isEditing = streakToEdit != null
 

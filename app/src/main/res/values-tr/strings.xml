@@ -126,4 +126,30 @@
     <string name="tooltip_nav_diary">Günlük ve Ajandana git</string>
     <string name="tooltip_nav_lists">Listelerine ve Notlarına git</string>
     <string name="tooltip_nav_settings">Uygulama Ayarlarına git</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_new_streak">Yeni Seri</string>
+    <string name="shortcut_new_task">Yeni Görev</string>
+    <string name="shortcut_new_list">Yeni Liste</string>
+
+    <!-- Diary Widget -->
+    <string name="widget_diary_title">Bugünün Günlüğü 📖</string>
+    <string name="widget_diary_no_notes">Bugün için yazılmış not yok</string>
+    <string name="widget_diary_no_tasks">Planlanmış görev yok</string>
+    <string name="widget_diary_tasks_count">%1$d bekleyen görev</string>
+
+    <!-- List Editor Page -->
+    <string name="edit_list_title">Listeyi Düzenle</string>
+    <string name="list_title_hint">Liste Başlığı</string>
+    <string name="list_content_hint">Notunun veya listeni buraya yaz...</string>
+    <string name="list_saved">Liste kaydedildi! 📋</string>
+    <string name="list_deleted">Liste silindi 🗑️</string>
+    <string name="list_archived">Liste arşivlendi 📁</string>
+    <string name="list_unarchived">Liste geri yüklendi 📋</string>
+    <string name="list_pinned">Liste sabitlendi 📌</string>
+    <string name="list_unpinned">Sabitleme kaldırıldı</string>
+    <string name="list_delete_confirm_title">Liste Silinsin mi?</string>
+    <string name="list_delete_confirm_msg">Bu listeyi kalıcı olarak silmek istediğinden emin misin?</string>
+    <string name="tooltip_pin">Başa sabitle veya kaldır</string>
+    <string name="tooltip_color">Liste arka plan rengini değiştir</string>
 </resources>

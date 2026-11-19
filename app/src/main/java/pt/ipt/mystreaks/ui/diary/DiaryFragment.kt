@@ -168,6 +168,7 @@ class DiaryFragment : Fragment(R.layout.fragment_diary) {
             viewModel.saveNote(selectedDate, content)
             lastLoadedContent = content.trim()
             DiaryAlarmReceiver.scheduleDailyReminder(requireContext())
+            pt.ipt.mystreaks.widget.DiaryWidgetProvider.triggerUpdate(requireContext())
             Toast.makeText(requireContext(), R.string.diary_note_saved, Toast.LENGTH_SHORT).show()
             logViewModel.registrarAcao("DIARIO", "Guardou nota do diário para $selectedDate")
         }

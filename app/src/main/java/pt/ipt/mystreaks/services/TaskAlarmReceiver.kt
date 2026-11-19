@@ -69,7 +69,8 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         }
 
         val mainIntent = Intent(context, pt.ipt.mystreaks.ui.main.MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(pt.ipt.mystreaks.ui.main.MainActivity.EXTRA_OPEN_TAB, pt.ipt.mystreaks.ui.main.MainActivity.TAB_TASKS)
         }
         val pendingIntent = PendingIntent.getActivity(
             context, taskName.hashCode(), mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

@@ -126,4 +126,30 @@
     <string name="tooltip_nav_diary">Ir a tu Diario y Agenda</string>
     <string name="tooltip_nav_lists">Ir a tus Listas y Notas</string>
     <string name="tooltip_nav_settings">Ir a los Ajustes de la aplicación</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_new_streak">Nueva Racha</string>
+    <string name="shortcut_new_task">Nueva Tarea</string>
+    <string name="shortcut_new_list">Nueva Lista</string>
+
+    <!-- Diary Widget -->
+    <string name="widget_diary_title">Diario de Hoy 📖</string>
+    <string name="widget_diary_no_notes">Sin notas escritas para hoy</string>
+    <string name="widget_diary_no_tasks">Sin tareas programadas</string>
+    <string name="widget_diary_tasks_count">%1$d tarea(s) pendiente(s)</string>
+
+    <!-- List Editor Page -->
+    <string name="edit_list_title">Editar Lista</string>
+    <string name="list_title_hint">Título de la Lista</string>
+    <string name="list_content_hint">Escribe aquí el contenido de tu nota o lista...</string>
+    <string name="list_saved">¡Lista guardada! 📋</string>
+    <string name="list_deleted">Lista eliminada 🗑️</string>
+    <string name="list_archived">Lista archivada 📁</string>
+    <string name="list_unarchived">Lista restaurada 📋</string>
+    <string name="list_pinned">Lista fijada 📌</string>
+    <string name="list_unpinned">Lista desfijada</string>
+    <string name="list_delete_confirm_title">¿Eliminar Lista?</string>
+    <string name="list_delete_confirm_msg">¿Estás seguro de que deseas eliminar esta lista permanentemente?</string>
+    <string name="tooltip_pin">Fijar o desfijar en la parte superior</string>
+    <string name="tooltip_color">Cambiar color de fondo de la lista</string>
 </resources>

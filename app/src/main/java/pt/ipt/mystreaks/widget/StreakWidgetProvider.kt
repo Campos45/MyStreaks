@@ -23,8 +23,11 @@ class StreakWidgetProvider : AppWidgetProvider() {
             views.setRemoteAdapter(R.id.widgetListView, intent)
             views.setEmptyView(R.id.widgetListView, R.id.widgetEmptyView)
 
-            // Criar a ação de abrir a MainActivity ao clicar
-            val mainIntent = Intent(context, MainActivity::class.java)
+            // Criar a ação de abrir a MainActivity na tab Streaks ao clicar
+            val mainIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(MainActivity.EXTRA_OPEN_TAB, MainActivity.TAB_STREAKS)
+            }
             val pendingIntent = PendingIntent.getActivity(
                 context, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )

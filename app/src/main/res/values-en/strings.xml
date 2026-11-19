@@ -126,4 +126,30 @@
     <string name="tooltip_nav_diary">Go to your Diary &amp; Agenda</string>
     <string name="tooltip_nav_lists">Go to your Lists &amp; Notes</string>
     <string name="tooltip_nav_settings">Go to Application Settings</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_new_streak">New Streak</string>
+    <string name="shortcut_new_task">New Task</string>
+    <string name="shortcut_new_list">New List</string>
+
+    <!-- Diary Widget -->
+    <string name="widget_diary_title">Today\'s Diary 📖</string>
+    <string name="widget_diary_no_notes">No notes written for today</string>
+    <string name="widget_diary_no_tasks">No tasks scheduled</string>
+    <string name="widget_diary_tasks_count">%1$d pending task(s)</string>
+
+    <!-- List Editor Page -->
+    <string name="edit_list_title">Edit List</string>
+    <string name="list_title_hint">List Title</string>
+    <string name="list_content_hint">Write your note or list content here...</string>
+    <string name="list_saved">List saved! 📋</string>
+    <string name="list_deleted">List deleted 🗑️</string>
+    <string name="list_archived">List archived 📁</string>
+    <string name="list_unarchived">List restored 📋</string>
+    <string name="list_pinned">List pinned 📌</string>
+    <string name="list_unpinned">List unpinned</string>
+    <string name="list_delete_confirm_title">Delete List?</string>
+    <string name="list_delete_confirm_msg">Are you sure you want to permanently delete this list?</string>
+    <string name="tooltip_pin">Pin or unpin at the top</string>
+    <string name="tooltip_color">Change list background color</string>
 </resources>
